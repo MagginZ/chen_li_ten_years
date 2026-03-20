@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_header.dart';
 import 'widgets/bottom_nav_bar.dart';
-import 'screens/scan_screen.dart';
-import 'screens/details_screen.dart';
-import 'screens/music_screen.dart';
-import 'screens/light_screen.dart';
+import 'screens/scan/scan_screen.dart';
+import 'screens/details/details_screen.dart';
+import 'screens/music/music_screen.dart';
+import 'screens/light/light_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
