@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  // Font families - using system fonts as fallback
-  static const String _headlineFont = 'Roboto';
-  static const String _bodyFont = 'Roboto';
-
+  /// Kinetic Organicism Design System
+  /// Space Grotesk for headlines, Manrope for body (fallback: system fonts)
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
@@ -43,7 +41,7 @@ class AppTheme {
         inversePrimary: AppColors.inversePrimary,
         brightness: Brightness.dark,
       ),
-      // Typography using system fonts
+      // Typography: Space Grotesk (headlines), Manrope (body)
       textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: 56,
@@ -66,19 +64,19 @@ class AppTheme {
         headlineLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
-          letterSpacing: -0.01,
+          letterSpacing: -0.02,
           color: AppColors.onSurface,
         ),
         headlineMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.01,
+          letterSpacing: -0.02,
           color: AppColors.onSurface,
         ),
         headlineSmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.01,
+          letterSpacing: -0.02,
           color: AppColors.onSurface,
         ),
         titleLarge: TextStyle(
@@ -130,23 +128,23 @@ class AppTheme {
           color: AppColors.onSurfaceVariant,
         ),
       ),
-      // Card Theme
+      // Card: lg (2rem) rounding, no dividers
       cardTheme: CardThemeData(
-        color: AppColors.surfaceContainerHigh.withOpacity(0.4),
+        color: AppColors.surfaceVariant.withOpacity(0.6),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(32),
         ),
       ),
-      // Button Themes
+      // Primary Button: gradient, md (1.5rem) rounded
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimaryFixed,
+          foregroundColor: AppColors.onPrimary,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(24),
           ),
           textStyle: const TextStyle(
             fontWeight: FontWeight.bold,
@@ -156,14 +154,13 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.secondaryFixed,
+          foregroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           textStyle: const TextStyle(
             fontWeight: FontWeight.w500,
           ),
         ),
       ),
-      // App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface.withOpacity(0.6),
         foregroundColor: AppColors.onSurface,
@@ -173,15 +170,14 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.15,
+          letterSpacing: -0.02,
           color: AppColors.primary,
         ),
       ),
-      // Bottom Navigation Theme
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surfaceContainerHigh.withOpacity(0.4),
+        backgroundColor: AppColors.surfaceVariant.withOpacity(0.6),
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.onSurface.withOpacity(0.4),
+        unselectedItemColor: AppColors.primaryFixedDim.withOpacity(0.6),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         selectedLabelStyle: const TextStyle(
@@ -193,37 +189,38 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-      // Slider Theme
+      // Slider: track surface-container-highest, thumb primary with glow
       sliderTheme: SliderThemeData(
         activeTrackColor: AppColors.primary,
-        inactiveTrackColor: AppColors.surfaceContainerLowest,
-        thumbColor: AppColors.onSurface,
-        overlayColor: AppColors.primary.withOpacity(0.1),
+        inactiveTrackColor: AppColors.surfaceContainerHighest,
+        thumbColor: AppColors.primary,
+        overlayColor: AppColors.primary.withOpacity(0.08),
         trackHeight: 6,
         thumbShape: const RoundSliderThumbShape(
           enabledThumbRadius: 12,
           elevation: 4,
         ),
       ),
-      // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceContainerLow,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(32),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(32),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1),
+          borderRadius: BorderRadius.circular(32),
+          borderSide: BorderSide(
+            color: AppColors.outlineVariant.withOpacity(0.15),
+            width: 1,
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
       ),
-      // Divider Theme
       dividerTheme: const DividerThemeData(
         color: Colors.transparent,
         space: 16,
