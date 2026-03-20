@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,12 +14,15 @@ import 'screens/light/light_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Permission.bluetooth.request();
-  await Permission.bluetoothScan.request();
-  await Permission.bluetoothConnect.request();
-  final locStatus = await Permission.locationWhenInUse.status;
-  if (locStatus.isDenied) {
-    await Permission.locationWhenInUse.request();
+  // Web 平台不支持蓝牙权限，跳过
+  if (!kIsWeb) {
+    await Permission.bluetooth.request();
+    await Permission.bluetoothScan.request();
+    await Permission.bluetoothConnect.request();
+    final locStatus = await Permission.locationWhenInUse.status;
+    if (locStatus.isDenied) {
+      await Permission.locationWhenInUse.request();
+    }
   }
 
   SystemChrome.setSystemUIOverlayStyle(
