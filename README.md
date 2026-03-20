@@ -29,6 +29,8 @@
 cd chen_li_ten_years
 flutter pub get
 flutter run
+flutter run -d chrome(浏览器)
+
 ```
 
 ## 项目结构
