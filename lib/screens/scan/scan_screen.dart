@@ -1,19 +1,38 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
-import 'scan_controller.dart';
-import 'scan_event.dart';
+import 'controller/scan_controller.dart';
+import 'event/scan_event.dart';
 
-class ScanScreen extends StatelessWidget {
+class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = ScanController();
-    final event = ScanEvent(controller);
+  State<ScanScreen> createState() => _ScanScreenState();
+}
 
+class _ScanScreenState extends State<ScanScreen> {
+  late final ScanController _controller;
+  late final ScanEvent _event;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScanController();
+    _event = ScanEvent(_controller);
+    _event.rescan();
+  }
+
+  @override
+  void dispose() {
+    _event.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: _controller,
       builder: (context, _) {
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -70,7 +89,7 @@ class ScanScreen extends StatelessWidget {
                     children: [
                       const SizedBox(height: 80),
                       Text(
-                        controller.isScanning ? 'SCANNING...' : 'DEVICES FOUND',
+                        _controller.isScanning ? 'SCANNING...' : 'DEVICES FOUND',
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.02,
@@ -96,9 +115,9 @@ class ScanScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            controller.isScanning
+                            _controller.isScanning
                                 ? 'Searching for nearby controllers'
-                                : '${controller.devices.length} devices available',
+                                : '${_controller.devices.length} devices available',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AppColors.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
@@ -107,17 +126,17 @@ class ScanScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 48),
-                      ...controller.devices.map(
-                        (d) => Padding(
+                      ..._controller.devices.asMap().entries.map(
+                        (e) => Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _buildDeviceCard(
                             context,
-                            d.name,
-                            d.id,
-                            d.signal,
-                            d.signalColor,
-                            d.isPrimary,
-                            () => event.connectDevice(controller.devices.indexOf(d)),
+                            e.value.name,
+                            e.value.id,
+                            e.value.signal,
+                            e.value.signalColor,
+                            e.value.isPrimary,
+                            () => _event.connectDevice(e.key),
                           ),
                         ),
                       ),
@@ -151,12 +170,19 @@ class ScanScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      GlowButton(
-                        onPressed: () => event.rescan(),
+                      IgnorePointer(
+                        ignoring: _controller.isScanning,
+                        child: Opacity(
+                          opacity: _controller.isScanning ? 0.5 : 1,
+                          child: GlowButton(
+                            onPressed: () => _event.rescan(),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.sync, color: AppColors.onPrimaryFixed),
+                            Icon(
+                              Icons.sync,
+                              color: AppColors.onPrimaryFixed,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'RE-SCAN DEVICES',
@@ -168,6 +194,8 @@ class ScanScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ),
                       ),
                       const SizedBox(height: 120),
                     ],
@@ -204,6 +232,7 @@ class ScanScreen extends StatelessWidget {
     bool isPrimary,
     VoidCallback onConnect,
   ) {
+    final displayId = id.length > 12 ? '${id.substring(0, 8)}...' : id;
     return GlassContainer(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -270,7 +299,7 @@ class ScanScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'ID: $id',
+                      'ID: $displayId',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontFamily: 'monospace',
                       ),

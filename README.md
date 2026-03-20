@@ -60,3 +60,14 @@ chen_li_ten_years/
 
 - flutter: SDK
 - cupertino_icons: ^1.0.6
+- flutter_blue_plus: ^1.32.0 — 蓝牙扫描与连接
+- audioplayers: ^6.0.0 — 音乐播放
+- permission_handler: ^11.3.0 — 权限请求
+
+## 逻辑实现 (Mock 协议)
+
+- **Mock UUID**: 0000FFE0 / 0000FFE1
+- **Scan**: Re-scan 调用 flutter_blue_plus 扫描，列表顶部硬编码 "Official Lightstick V2"，点击 CONNECT 模拟连接并跳转
+- **Details**: Auto-Sync 开关存储在 BleController
+- **Music**: 播放 assets/audio/mock_music.mp3，时间轴 Map (5s/10s/15s/20s/25s) 触发 RGB 指令
+- **Light**: 色盘选择实时转 RGB 发送，Fandom Presets (粉/白/蓝/紫) 点击发送预设指令

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
-import 'details_controller.dart';
-import 'details_event.dart';
+import '../../ble/ble_controller.dart';
+import 'controller/details_controller.dart';
+import 'event/details_event.dart';
 
 class DetailsScreen extends StatelessWidget {
   const DetailsScreen({super.key});
@@ -11,9 +12,10 @@ class DetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = DetailsController();
     final event = DetailsEvent(controller);
+    final ble = BleController.instance;
 
     return ListenableBuilder(
-      listenable: controller,
+      listenable: Listenable.merge([controller, ble]),
       builder: (context, _) {
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -288,7 +290,7 @@ class DetailsScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    controller.autoSyncEnabled
+                                    ble.autoSyncEnabled
                                         ? 'Enabled during concert events'
                                         : 'Disabled',
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -302,7 +304,7 @@ class DetailsScreen extends StatelessWidget {
                                 width: 40,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: controller.autoSyncEnabled
+                                  color: ble.autoSyncEnabled
                                       ? AppColors.tertiary
                                       : AppColors.surfaceVariant,
                                   borderRadius: BorderRadius.circular(12),
@@ -310,7 +312,7 @@ class DetailsScreen extends StatelessWidget {
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: Align(
-                                    alignment: controller.autoSyncEnabled
+                                    alignment: ble.autoSyncEnabled
                                         ? Alignment.centerRight
                                         : Alignment.centerLeft,
                                     child: Container(

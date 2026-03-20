@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_header.dart';
 import 'widgets/bottom_nav_bar.dart';
+import 'ble/ble_controller.dart';
 import 'screens/scan/scan_screen.dart';
 import 'screens/details/details_screen.dart';
 import 'screens/music/music_screen.dart';
 import 'screens/light/light_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set system UI overlay style for immersive dark mode
+
+  await Permission.bluetooth.request();
+  await Permission.bluetoothScan.request();
+  await Permission.bluetoothConnect.request();
+  final locStatus = await Permission.locationWhenInUse.status;
+  if (locStatus.isDenied) {
+    await Permission.locationWhenInUse.request();
+  }
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -20,13 +29,12 @@ void main() {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-  
-  // Enable edge-to-edge mode
+
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,
     overlays: [SystemUiOverlay.top],
   );
-  
+
   runApp(const NeonPulseApp());
 }
 
@@ -52,7 +60,15 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 3; // Start with Light screen (as shown in original code.html)
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    BleController.instance.onNavigateToTab = (index) {
+      setState(() => _currentIndex = index);
+    };
+  }
 
   final List<Widget> _screens = [
     const ScanScreen(),
@@ -74,9 +90,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: NeonBottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
         },
       ),
     );

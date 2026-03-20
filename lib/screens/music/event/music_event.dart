@@ -1,4 +1,4 @@
-import 'music_controller.dart';
+import '../controller/music_controller.dart';
 
 class MusicEvent {
   MusicEvent(this._controller);

@@ -1,19 +1,45 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
-import 'music_controller.dart';
-import 'music_event.dart';
+import '../../ble/ble_controller.dart';
+import 'controller/music_controller.dart';
+import 'event/music_event.dart';
 
-class MusicScreen extends StatelessWidget {
+class MusicScreen extends StatefulWidget {
   const MusicScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = MusicController();
-    final event = MusicEvent(controller);
+  State<MusicScreen> createState() => _MusicScreenState();
+}
 
+class _MusicScreenState extends State<MusicScreen> {
+  late final MusicController _controller;
+  late final MusicEvent _event;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MusicController();
+    _event = MusicEvent(_controller);
+    _controller.init();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: Listenable.merge([_controller, BleController.instance]),
       builder: (context, _) {
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -119,7 +145,7 @@ class MusicScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 40),
                       Text(
-                        controller.trackTitle,
+                        _controller.trackTitle,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.01,
@@ -127,7 +153,7 @@ class MusicScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        controller.artist,
+                        _controller.artist,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: AppColors.secondaryFixed,
                           fontWeight: FontWeight.w500,
@@ -162,7 +188,7 @@ class MusicScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    controller.syncEnabled
+                                    _controller.syncEnabled
                                         ? 'Synchronizing with beat...'
                                         : 'Sync disabled',
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -171,12 +197,12 @@ class MusicScreen extends StatelessWidget {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => event.toggleSync(),
+                              onTap: () => _event.toggleSync(),
                               child: Container(
                                 width: 56,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: controller.syncEnabled
+                                  color: _controller.syncEnabled
                                       ? AppColors.primary
                                       : AppColors.surfaceVariant,
                                   borderRadius: BorderRadius.circular(14),
@@ -184,7 +210,7 @@ class MusicScreen extends StatelessWidget {
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: Align(
-                                    alignment: controller.syncEnabled
+                                    alignment: _controller.syncEnabled
                                         ? Alignment.centerRight
                                         : Alignment.centerLeft,
                                     child: Container(
@@ -225,7 +251,7 @@ class MusicScreen extends StatelessWidget {
                                       left: 0,
                                       top: 0,
                                       bottom: 0,
-                                      width: constraints.maxWidth * controller.progress,
+                                      width: constraints.maxWidth * _controller.progress,
                                       child: Container(
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
@@ -248,14 +274,14 @@ class MusicScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '01:42',
+                                _formatDuration(_controller.position),
                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   fontFamily: 'monospace',
                                   color: AppColors.onSurfaceVariant,
                                 ),
                               ),
                               Text(
-                                '03:54',
+                                _formatDuration(_controller.duration),
                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   fontFamily: 'monospace',
                                   color: AppColors.onSurfaceVariant,
@@ -270,7 +296,7 @@ class MusicScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
-                            onPressed: () => event.shuffle(),
+                            onPressed: () => _event.shuffle(),
                             icon: Icon(
                               Icons.shuffle,
                               color: AppColors.onSurface.withOpacity(0.6),
@@ -279,7 +305,7 @@ class MusicScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 24),
                           IconButton(
-                            onPressed: () => event.skipPrevious(),
+                            onPressed: () => _event.skipPrevious(),
                             icon: const Icon(Icons.skip_previous),
                             iconSize: 40,
                             color: AppColors.onSurface,
@@ -306,9 +332,9 @@ class MusicScreen extends StatelessWidget {
                               ],
                             ),
                             child: IconButton(
-                              onPressed: () => event.togglePlay(),
+                              onPressed: () => _event.togglePlay(),
                               icon: Icon(
-                                controller.isPlaying ? Icons.pause : Icons.play_arrow,
+                                _controller.isPlaying ? Icons.pause : Icons.play_arrow,
                                 size: 40,
                                 color: AppColors.onPrimary,
                               ),
@@ -316,14 +342,14 @@ class MusicScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 16),
                           IconButton(
-                            onPressed: () => event.skipNext(),
+                            onPressed: () => _event.skipNext(),
                             icon: const Icon(Icons.skip_next),
                             iconSize: 40,
                             color: AppColors.onSurface,
                           ),
                           const SizedBox(width: 24),
                           IconButton(
-                            onPressed: () => event.repeat(),
+                            onPressed: () => _event.repeat(),
                             icon: Icon(
                               Icons.repeat,
                               color: AppColors.onSurface.withOpacity(0.6),

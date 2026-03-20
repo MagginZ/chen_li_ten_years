@@ -1,19 +1,41 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
-import 'light_controller.dart';
-import 'light_event.dart';
+import 'controller/light_controller.dart';
+import 'event/light_event.dart';
 
-class LightScreen extends StatelessWidget {
+class LightScreen extends StatefulWidget {
   const LightScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = LightController();
-    final event = LightEvent(controller);
+  State<LightScreen> createState() => _LightScreenState();
+}
 
+class _LightScreenState extends State<LightScreen> {
+  late final LightController _controller;
+  late final LightEvent _event;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = LightController();
+    _event = LightEvent(_controller);
+  }
+
+  /// 从色盘点击位置计算 Color (基于角度 -> 色相)
+  Color _colorFromPosition(Offset localPos, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final delta = localPos - center;
+    final angle = math.atan2(delta.dy, delta.dx);
+    final hue = (angle + math.pi) / (2 * math.pi);
+    return HSVColor.fromAHSV(1.0, hue * 360, 1.0, 1.0).toColor();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: _controller,
       builder: (context, _) {
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -94,111 +116,125 @@ class LightScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 40),
                       Center(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              width: 320,
-                              height: 320,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    blurRadius: 80,
-                                    spreadRadius: 40,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              width: 320,
-                              height: 320,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerHigh,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.black.withOpacity(0.5),
-                                    blurRadius: 30,
-                                  ),
-                                ],
-                              ),
-                              child: Container(
-                                decoration: const BoxDecoration(
+                        child: SizedBox(
+                          width: 320,
+                          height: 320,
+                          child: GestureDetector(
+                            onTapDown: (d) {
+                              final color = _colorFromPosition(d.localPosition, const Size(320, 320));
+                              _event.selectColor(color);
+                            },
+                            onPanUpdate: (d) {
+                              final color = _colorFromPosition(d.localPosition, const Size(320, 320));
+                              _event.selectColor(color);
+                            },
+                            child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 320,
+                                height: 320,
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  gradient: SweepGradient(
-                                    colors: [
-                                      Colors.red,
-                                      Colors.purple,
-                                      Colors.blue,
-                                      Colors.cyan,
-                                      Colors.green,
-                                      Colors.yellow,
-                                      Colors.red,
-                                    ],
-                                  ),
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Positioned(
-                                      top: 80,
-                                      left: 80,
-                                      child: Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.onSurface,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: AppColors.surface,
-                                            width: 4,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.3),
-                                              blurRadius: 10,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.surface,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.palette,
-                                            color: AppColors.primary,
-                                            size: 40,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Hue Control',
-                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                              color: AppColors.onSurface.withOpacity(0.4),
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      blurRadius: 80,
+                                      spreadRadius: 40,
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
+                              Container(
+                                width: 320,
+                                height: 320,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerHigh,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.black.withOpacity(0.5),
+                                      blurRadius: 30,
+                                    ),
+                                  ],
+                                ),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: SweepGradient(
+                                      colors: [
+                                        Colors.red,
+                                        Colors.purple,
+                                        Colors.blue,
+                                        Colors.cyan,
+                                        Colors.green,
+                                        Colors.yellow,
+                                        Colors.red,
+                                      ],
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Positioned(
+                                        top: 80,
+                                        left: 80,
+                                        child: Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: _controller.selectedColor,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColors.surface,
+                                              width: 4,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.black.withOpacity(0.3),
+                                                blurRadius: 10,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.surface,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.palette,
+                                              color: AppColors.primary,
+                                              size: 40,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Hue Control',
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: AppColors.onSurface.withOpacity(0.4),
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                    ),
                       const SizedBox(height: 40),
                       GlassContainer(
                         padding: const EdgeInsets.all(24),
@@ -216,7 +252,7 @@ class LightScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '${(controller.brightness * 100).toInt()}%',
+                                  '${(_controller.brightness * 100).toInt()}%',
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primary,
@@ -246,8 +282,8 @@ class LightScreen extends StatelessWidget {
                                       ),
                                     ),
                                     child: Slider(
-                                      value: controller.brightness,
-                                      onChanged: (v) => event.setBrightness(v),
+                                      value: _controller.brightness,
+                                      onChanged: (v) => _event.setBrightness(v),
                                       activeColor: AppColors.primary,
                                       inactiveColor: AppColors.surfaceContainerLowest,
                                     ),
@@ -286,9 +322,9 @@ class LightScreen extends StatelessWidget {
                         itemCount: LightController.modes.length,
                         itemBuilder: (context, index) {
                           final mode = LightController.modes[index];
-                          final isSelected = controller.selectedMode == mode['name'];
+                          final isSelected = _controller.selectedMode == mode['name'];
                           return GestureDetector(
-                            onTap: () => event.selectMode(mode['name'] as String),
+                            onTap: () => _event.selectMode(mode['name'] as String),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               decoration: BoxDecoration(
@@ -342,11 +378,11 @@ class LightScreen extends StatelessWidget {
                         child: Row(
                           children: [
                             ...List.generate(LightController.presets.length, (index) {
-                              final isSelected = controller.selectedPreset == index;
+                              final isSelected = _controller.selectedPreset == index;
                               return Padding(
                                 padding: const EdgeInsets.only(right: 16),
                                 child: GestureDetector(
-                                  onTap: () => event.selectPreset(index),
+                                  onTap: () => _event.selectPreset(index),
                                   child: Container(
                                     width: 56,
                                     height: 56,
