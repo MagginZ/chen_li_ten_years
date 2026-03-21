@@ -1,17 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import '../../../ble/ble_controller.dart';
-
-/// 时间轴：秒数 -> RGB 指令 [R, G, B]
-/// 当音乐到达指定秒数时发送灯光指令
-final Map<int, List<int>> musicTimeline = {
-  5: [0xFF, 0x00, 0x00],   // 5s: 红
-  10: [0x00, 0xFF, 0x00],  // 10s: 绿
-  15: [0x00, 0x00, 0xFF],  // 15s: 蓝
-  20: [0xFF, 0xFF, 0x00],  // 20s: 黄
-  25: [0xFF, 0x00, 0xFF],  // 25s: 紫
-};
+import '../../../ble/ble_controller.dart' show BleController, syncScript;
 
 class MusicController extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
@@ -52,11 +42,9 @@ class MusicController extends ChangeNotifier {
 
     if (BleController.instance.autoSyncEnabled) {
       final sec = pos.inSeconds;
-      final cmd = musicTimeline[sec];
-      if (cmd != null && !_triggeredSeconds.contains(sec)) {
+      if (syncScript.containsKey(sec) && !_triggeredSeconds.contains(sec)) {
         _triggeredSeconds.add(sec);
-        BleController.instance.writeHex(cmd);
-        debugPrint('[MusicController] Timeline @ ${sec}s -> RGB ${cmd.map((e) => e.toRadixString(16)).join(' ')}');
+        BleController.instance.triggerSyncAt(sec);
       }
     }
     notifyListeners();

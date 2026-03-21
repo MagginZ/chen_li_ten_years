@@ -6,6 +6,14 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 const String mockServiceUuid = '0000FFE0-0000-1000-8000-00805F9B34FB';
 const String mockCharUuid = '0000FFE1-0000-1000-8000-00805F9B34FB';
 
+/// 音乐同步脚本：秒数 -> RGB 指令 [R, G, B]
+/// 当音乐播放到指定秒数时触发灯光指令，便于后续接入真实 BLE
+final Map<int, List<int>> syncScript = {
+  5: [0xFF, 0x00, 0x00],
+  12: [0x00, 0xFF, 0x00],
+  30: [0x00, 0x00, 0xFF],
+};
+
 /// 全局蓝牙控制器：连接状态、Auto-Sync、指令发送
 class BleController extends ChangeNotifier {
   BleController._();
@@ -68,6 +76,15 @@ class BleController extends ChangeNotifier {
   Future<void> writeHex(List<int> data) async {
     await _writeBytes(data);
     debugPrint('[BleController] writeHex: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+  }
+
+  /// 音乐同步触发：当播放到 syncScript 中定义的秒数时调用
+  /// 控制台打印 [Sync] Sending RGB Command: [0xFF, 0x00, 0x00]，便于后续接入真实 BLE
+  Future<void> triggerSyncAt(int second) async {
+    final cmd = syncScript[second];
+    if (cmd == null) return;
+    debugPrint('[Sync] Sending RGB Command: $cmd');
+    await writeHex(cmd);
   }
 
   Future<void> _writeBytes(List<int> data) async {

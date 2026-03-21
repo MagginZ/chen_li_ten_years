@@ -47,6 +47,10 @@ class AppColors {
 
   // Surface - Deep Space Foundation
   static const Color background = Color(0xFF0E0E13);
+  /// Music Sync 页面背景色
+  static const Color musicBackground = Color(0xFF10140F);
+  /// Music Sync 进度条滑块发光色 (primary #0xFFFF6E84)
+  static const Color musicPrimary = Color(0xFFFF6E84);
   static const Color onBackground = Color(0xFFF8F5FD);
   static const Color surface = Color(0xFF0E0E13);
   static const Color surfaceDim = Color(0xFF0E0E13);
