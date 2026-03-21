@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// 后端 Python FastAPI 服务地址
-/// GET $base/api/playlist 拉取陈粒歌单
-/// - Web/模拟器: localhost
-/// - 真机同网: 替换为电脑 IP，如 http://192.168.1.100:8000
-const String kPlaylistApiBase = 'http://localhost:8000';
+/// - Web/模拟器: 默认 localhost
+/// - iPhone 真机: 使用 --dart-define=API_BASE=http://<电脑IP>:8000
+const String kPlaylistApiBase = String.fromEnvironment(
+  'API_BASE',
+  defaultValue: 'http://localhost:8000',
+);
 
 /// 歌单项（API 响应格式）
 class PlaylistItemDto {

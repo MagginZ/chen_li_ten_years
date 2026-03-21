@@ -1,22 +1,30 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 import '../../../ble/ble_controller.dart' show BleController, syncScript;
 import 'music_list_controller.dart';
 
 class MusicController extends ChangeNotifier {
   MusicController({this.initialTrack}) {
-    _player.onDurationChanged.listen((d) {
-      _duration = d;
+    _durationSub = _player.durationStream.listen((d) {
+      if (d != null) {
+        _duration = d;
+        notifyListeners();
+      }
+    });
+    _positionSub = _player.positionStream.listen(_onPositionChanged);
+    _stateSub = _player.playerStateStream.listen((s) {
+      _isPlaying = s.playing;
       notifyListeners();
     });
-    _player.onPositionChanged.listen(_onPositionChanged);
   }
 
   final MusicTrack? initialTrack;
   MusicTrack? _currentTrack;
   final AudioPlayer _player = AudioPlayer();
+  StreamSubscription? _durationSub;
   StreamSubscription? _positionSub;
+  StreamSubscription? _stateSub;
   final Set<int> _triggeredSeconds = {};
 
   bool _isPlaying = false;
@@ -54,7 +62,6 @@ class MusicController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 是否为可播放的音频 URL（直接链接，如网易云返回的 mp3/m4a）
   bool _isPlayableUrl(String? url) {
     if (url == null || url.isEmpty) return false;
     final lower = url.toLowerCase();
@@ -67,7 +74,6 @@ class MusicController extends ChangeNotifier {
     await _loadTrack(_currentTrack);
   }
 
-  /// 切换到指定曲目（上一首/下一首）
   Future<void> switchTrack(MusicTrack track) async {
     _currentTrack = track;
     await _loadTrack(track);
@@ -77,27 +83,27 @@ class MusicController extends ChangeNotifier {
     final streamUrl = track?.streamUrl;
     if (_isPlayableUrl(streamUrl)) {
       try {
-        await _player.setSource(UrlSource(streamUrl!));
+        await _player.setUrl(streamUrl!);
         debugPrint('[MusicController] Playing from NCM: $streamUrl');
-        await _player.resume();
+        await _player.play();
         _isPlaying = true;
         notifyListeners();
         return;
       } catch (e) {
-        debugPrint('[MusicController] UrlSource failed, fallback: $e');
+        debugPrint('[MusicController] setUrl failed, fallback: $e');
       }
     }
     try {
-      await _player.setSource(AssetSource('assets/audio/mock_music.mp3'));
+      await _player.setAsset('assets/audio/mock_music.mp3');
       debugPrint('[MusicController] Using fallback asset');
     } catch (e) {
       debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
       try {
-        await _player.setSource(UrlSource(
+        await _player.setUrl(
           'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        ));
+        );
       } catch (e2) {
-        debugPrint('[MusicController] UrlSource failed: $e2');
+        debugPrint('[MusicController] setUrl failed: $e2');
       }
     }
   }
@@ -106,7 +112,7 @@ class MusicController extends ChangeNotifier {
     if (_isPlaying) {
       await _player.pause();
     } else {
-      await _player.resume();
+      await _player.play();
     }
     _isPlaying = !_isPlaying;
     notifyListeners();
@@ -126,12 +132,12 @@ class MusicController extends ChangeNotifier {
 
   void seekToStart() => _player.seek(Duration.zero);
   void seekToEnd() => _player.seek(_duration);
-  void shuffle() => notifyListeners();
-  void repeat() => notifyListeners();
 
   @override
   void dispose() {
+    _durationSub?.cancel();
     _positionSub?.cancel();
+    _stateSub?.cancel();
     _player.dispose();
     super.dispose();
   }

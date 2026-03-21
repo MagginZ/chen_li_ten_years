@@ -1,15 +1,12 @@
 # This is a generated file; do not edit or check into version control.
-audioplayers=/Users/seven/.pub-cache/hosted/pub.dev/audioplayers-6.6.0/
-audioplayers_android=/Users/seven/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.1/
-audioplayers_darwin=/Users/seven/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.4.0/
-audioplayers_linux=/Users/seven/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.1/
-audioplayers_web=/Users/seven/.pub-cache/hosted/pub.dev/audioplayers_web-5.2.0/
-audioplayers_windows=/Users/seven/.pub-cache/hosted/pub.dev/audioplayers_windows-4.3.0/
+audio_session=/Users/seven/.pub-cache/hosted/pub.dev/audio_session-0.2.3/
 flutter_blue_plus=/Users/seven/.pub-cache/hosted/pub.dev/flutter_blue_plus-1.36.8/
 flutter_blue_plus_android=/Users/seven/.pub-cache/hosted/pub.dev/flutter_blue_plus_android-7.0.4/
 flutter_blue_plus_darwin=/Users/seven/.pub-cache/hosted/pub.dev/flutter_blue_plus_darwin-7.0.3/
 flutter_blue_plus_linux=/Users/seven/.pub-cache/hosted/pub.dev/flutter_blue_plus_linux-7.0.3/
 flutter_blue_plus_web=/Users/seven/.pub-cache/hosted/pub.dev/flutter_blue_plus_web-7.0.2/
+just_audio=/Users/seven/.pub-cache/hosted/pub.dev/just_audio-0.10.5/
+just_audio_web=/Users/seven/.pub-cache/hosted/pub.dev/just_audio_web-0.4.16/
 path_provider=/Users/seven/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
 path_provider_android=/Users/seven/.pub-cache/hosted/pub.dev/path_provider_android-2.2.17/
 path_provider_foundation=/Users/seven/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/

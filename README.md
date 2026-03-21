@@ -1,6 +1,6 @@
 # Neon Pulse
 
-一个基于 Flutter 开发的 K-pop 应援棒控制应用，具有赛博朋克霓虹美学设计风格。
+一个基于 Flutter 开发的 K-pop 应援棒控制应用，具有赛博朋克霓虹美学设计风格。原本想要绿色的，但因为要扫描蓝牙，绿色的像雷达哈哈哈哈，算了算了还是初版最好看，重庆场的应援棒就是粉色不是么😬
 
 
 🧠🌟想法诞生于「陈粒十周年巡演」，带回家的应援棒只能默默放着，于是开始研究它为什么只能在演唱会期间亮，就不能手机上控制么，知道原理后开始搜类似的应用，搜到某个小程序做到了我想要的效果，但仅限xx粉丝可用，太局限了，不就多一个蓝牙模块么，焊一个不就好了？女朋友就是干这个的，于是让女朋友买料、焊接模块，我搞软件。
@@ -41,10 +41,28 @@
 ```bash
 cd chen_li_ten_years
 flutter pub get
-flutter run
-flutter run -d chrome(浏览器)
-
+flutter run                    # 自动选择可用设备
+flutter run -d chrome          # 浏览器
+flutter run -d <device-id>     # 指定设备
 ```
+
+### 在 iPhone 真机上运行
+
+1. **连接 iPhone**：用数据线连接 Mac，手机上信任此电脑
+2. **启用开发者模式**（iOS 16+）：设置 → 隐私与安全性 → 开发者模式
+3. **启动后端**（手机与电脑需在同一 WiFi）：
+   ```bash
+   cd backend && source .venv/bin/activate
+   uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
+4. **查看电脑 IP**：系统设置 → 网络，或运行 `ifconfig | grep "inet "`
+5. **运行到 iPhone**：
+   ```bash
+   flutter run -d <你的iPhone> --dart-define=API_BASE=http://<电脑IP>:8000
+   ```
+   例如：`flutter run -d 00008110-xxx --dart-define=API_BASE=http://192.168.1.100:8000`
+
+   **若提示签名/provisioning 错误**：用 Xcode 打开 `ios/Runner.xcworkspace`，选中 Runner → Signing & Capabilities，确认已勾选 "Automatically manage signing" 并选择你的 Apple ID 开发团队。
 
 ## 后端 API
 
@@ -62,7 +80,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 - 局域网访问: `http://<电脑IP>:8000`（如 iPhone 同网访问）
 
 ## 项目结构
-
+ 
 ```
 chen_li_ten_years/
 ├── backend/                 # FastAPI 歌单 API
@@ -98,7 +116,7 @@ chen_li_ten_years/
 - flutter: SDK
 - cupertino_icons: ^1.0.6
 - flutter_blue_plus: ^1.32.0 — 蓝牙扫描与连接
-- audioplayers: ^6.0.0 — 音乐播放
+- just_audio: ^0.10.5 — 音乐播放（替代 audioplayers 解决 iOS 崩溃）
 - permission_handler: ^11.3.0 — 权限请求
 
 ## 逻辑实现 (Mock 协议)
