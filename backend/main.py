@@ -1,5 +1,5 @@
 """
-FastAPI backend for Neon Pulse - Music Playlist API
+FastAPI backend for 果实 - Music Playlist API
 使用网易云音乐 (pyncm) 获取陈粒歌单及直接音频播放链接
 
 参考 pyncm 文档: https://github.com/mos9527/pyncm
@@ -31,7 +31,7 @@ NCM_TIMEOUT_SEC = 12  # pyncm 调用超时
 PAGE_SIZE_DEFAULT = 20
 
 
-app = FastAPI(title="Neon Pulse Music API", version="1.0.0")
+app = FastAPI(title="果实 Music API", version="1.0.0")
 
 # CORS: allow all origins for Flutter app (web, iOS, Android)
 app.add_middleware(

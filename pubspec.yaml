@@ -2,7 +2,7 @@ name: neon_pulse
 version: 1.0.0+1
 publish_to: 'none'
 
-description: Neon Pulse - K-pop Lightstick Control App with cyberpunk neon aesthetic
+description: 果实 - K-pop Lightstick Control App with cyberpunk neon aesthetic
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

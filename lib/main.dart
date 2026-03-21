@@ -48,7 +48,7 @@ class NeonPulseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Neon Pulse',
+      title: '果实',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const MainScreen(),

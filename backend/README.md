@@ -1,4 +1,4 @@
-# Neon Pulse Music API
+# 果实 Music API
 
 FastAPI 后端，为 Flutter 应用提供歌单接口。搜索 **陈粒 (Chen Li)** 音乐。
 

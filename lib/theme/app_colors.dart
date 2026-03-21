@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Neon Pulse Design System Colors
+/// 果实 Design System Colors
 /// Based on the "Deep Space" foundation with hyper-vibrant neon accents
 class AppColors {
   // Primary - Neon Pink

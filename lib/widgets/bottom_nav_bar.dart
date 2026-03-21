@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// Custom bottom navigation bar for Neon Pulse app
+/// Custom bottom navigation bar for 果实 app
 /// Features glassmorphism effect and active item highlighting
 class NeonBottomNavBar extends StatelessWidget {
   final int currentIndex;

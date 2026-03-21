@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 /// Custom app header with glassmorphism effect
-/// Shows Neon Pulse logo and user avatar
+/// Shows 果实 logo and user avatar
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   const AppHeader({super.key});
 
@@ -44,7 +44,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'NEON PULSE',
+                      '果实',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
