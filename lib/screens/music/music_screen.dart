@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
 import '../../ble/ble_controller.dart';
 import 'controller/music_controller.dart';
+import 'controller/music_list_controller.dart';
 import 'event/music_event.dart';
 
 /// 发光滑块形状：primary 色 20px 外发光
@@ -47,7 +48,14 @@ class _GlowThumbShape extends RoundSliderThumbShape {
 }
 
 class MusicScreen extends StatefulWidget {
-  const MusicScreen({super.key});
+  const MusicScreen({
+    super.key,
+    this.track,
+    this.onBack,
+  });
+
+  final MusicTrack? track;
+  final VoidCallback? onBack;
 
   @override
   State<MusicScreen> createState() => _MusicScreenState();
@@ -149,8 +157,19 @@ class _MusicScreenState extends State<MusicScreen>
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
+                      if (widget.onBack != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: IconButton(
+                            onPressed: widget.onBack,
+                            icon: const Icon(Icons.arrow_back_ios),
+                            color: AppColors.onSurface,
+                            iconSize: 24,
+                          ),
+                        ),
+                      const SizedBox(height: 16),
                       // 动态封面：播放时缓慢缩放，暂停时停止
                       AnimatedBuilder(
                         animation: _coverScale,
@@ -202,7 +221,7 @@ class _MusicScreenState extends State<MusicScreen>
                       const SizedBox(height: 40),
                       // 歌曲名 (Space Grotesk 风格，无 google_fonts 时用主题字体)
                       Text(
-                        _controller.trackTitle,
+                        widget.track?.title ?? _controller.trackTitle,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.01,
@@ -212,7 +231,7 @@ class _MusicScreenState extends State<MusicScreen>
                       const SizedBox(height: 8),
                       // 歌手名 (Manrope 风格)
                       Text(
-                        _controller.artist,
+                        widget.track?.artist ?? _controller.artist,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppColors.secondaryFixed,

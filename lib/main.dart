@@ -8,7 +8,7 @@ import 'widgets/bottom_nav_bar.dart';
 import 'ble/ble_controller.dart';
 import 'screens/scan/scan_screen.dart';
 import 'screens/details/details_screen.dart';
-import 'screens/music/music_screen.dart';
+import 'screens/music/music_tab_screen.dart';
 import 'screens/light/light_screen.dart';
 
 void main() async {
@@ -77,7 +77,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const ScanScreen(),
     const DetailsScreen(),
-    const MusicScreen(),
+    const MusicTabScreen(),
     const LightScreen(),
   ];
 
