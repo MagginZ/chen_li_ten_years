@@ -7,7 +7,6 @@ FastAPI backend for Neon Pulse - Music Playlist API
 - GetTrackAudio 需先匿名登录
 """
 import asyncio
-import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any
 
@@ -28,11 +27,8 @@ except ImportError:
 # 线程池，避免阻塞事件循环
 _executor = ThreadPoolExecutor(max_workers=2)
 
-# 歌单缓存，减少对网易云 API 的频繁请求
-_playlist_cache: List[Dict[str, Any]] = []
-_cache_time: float = 0
-CACHE_TTL_SEC = 300  # 5 分钟
 NCM_TIMEOUT_SEC = 12  # pyncm 调用超时
+PAGE_SIZE_DEFAULT = 20
 
 
 app = FastAPI(title="Neon Pulse Music API", version="1.0.0")
@@ -88,8 +84,8 @@ def _ensure_login():
         print(f"[pyncm] Login failed: {e}")
 
 
-def _fetch_from_ncm_sync() -> List[PlaylistItem]:
-    """从网易云音乐获取陈粒歌单（同步，可能较慢）"""
+def _fetch_from_ncm_sync(keyword: str, limit: int, offset: int) -> List[PlaylistItem]:
+    """从网易云音乐搜索歌单（同步，可能较慢）"""
     if not PYNCM_AVAILABLE:
         return []
 
@@ -97,8 +93,8 @@ def _fetch_from_ncm_sync() -> List[PlaylistItem]:
         _configure_pyncm_session()
         _ensure_login()
 
-        # 1. 搜索陈粒歌曲
-        search = GetSearchResult("陈粒", stype=SONG, limit=10, offset=0)
+        # 1. 搜索（支持任意歌手/关键词）
+        search = GetSearchResult(keyword, stype=SONG, limit=limit, offset=offset)
         songs = (search.get("result") or {}).get("songs") or []
         if not songs:
             return []
@@ -164,34 +160,26 @@ def _get_mock_playlist() -> List[PlaylistItem]:
 
 
 @app.get("/api/playlist", response_model=List[PlaylistItem])
-async def get_playlist():
+async def get_playlist(keyword: str = "陈粒", limit: int = PAGE_SIZE_DEFAULT, offset: int = 0):
     """
-    GET /api/playlist
-    返回陈粒歌单。使用缓存与超时控制，避免 pyncm 阻塞。
+    GET /api/playlist?keyword=xxx&limit=20&offset=0
+    搜索任意歌手/关键词，支持分页。
     """
-    global _playlist_cache, _cache_time
-
-    # 1. 缓存命中
-    if _playlist_cache and (time.time() - _cache_time) < CACHE_TTL_SEC:
-        return [PlaylistItem(**x) for x in _playlist_cache]
-
-    # 2. 在线程池中执行，带超时
     loop = asyncio.get_running_loop()
     try:
         items = await asyncio.wait_for(
-            loop.run_in_executor(_executor, _fetch_from_ncm_sync),
+            loop.run_in_executor(
+                _executor,
+                lambda: _fetch_from_ncm_sync(keyword, limit, offset),
+            ),
             timeout=NCM_TIMEOUT_SEC,
         )
     except asyncio.TimeoutError:
-        print("[pyncm] Timeout, using mock")
+        print("[pyncm] Timeout")
         items = []
 
-    if not items:
+    if not items and offset == 0 and keyword == "陈粒":
         items = _get_mock_playlist()
-    else:
-        _playlist_cache = [i.model_dump() for i in items]
-        _cache_time = time.time()
-
     return items
 
 

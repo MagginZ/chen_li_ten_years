@@ -47,14 +47,82 @@ class _GlowThumbShape extends RoundSliderThumbShape {
   }
 }
 
+class _CoverImage extends StatelessWidget {
+  const _CoverImage({this.url});
+
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url == null || url!.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.musicPrimary.withValues(alpha: 0.8),
+              AppColors.tertiary.withValues(alpha: 0.8),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.album,
+            size: 120,
+            color: AppColors.white.withValues(alpha: 0.3),
+          ),
+        ),
+      );
+    }
+    return Image.network(
+      url!,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.musicPrimary.withValues(alpha: 0.8),
+              AppColors.tertiary.withValues(alpha: 0.8),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Icon(Icons.album, size: 120, color: AppColors.white.withValues(alpha: 0.3)),
+        ),
+      ),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          color: AppColors.surfaceContainerHigh,
+          child: Center(
+            child: CircularProgressIndicator(
+              color: AppColors.musicPrimary,
+              value: progress.expectedTotalBytes != null
+                  ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                  : null,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class MusicScreen extends StatefulWidget {
   const MusicScreen({
     super.key,
     this.track,
+    this.allTracks = const [],
+    this.initialIndex = 0,
     this.onBack,
   });
 
   final MusicTrack? track;
+  final List<MusicTrack> allTracks;
+  final int initialIndex;
   final VoidCallback? onBack;
 
   @override
@@ -67,10 +135,12 @@ class _MusicScreenState extends State<MusicScreen>
   late final MusicEvent _event;
   late final AnimationController _coverAnimController;
   late final Animation<double> _coverScale;
+  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     _controller = MusicController(initialTrack: widget.track);
     _event = MusicEvent(_controller);
     _controller.init();
@@ -97,6 +167,26 @@ class _MusicScreenState extends State<MusicScreen>
     } else {
       _coverAnimController.stop();
       _coverAnimController.reset();
+    }
+  }
+
+  void _onPrev() {
+    final tracks = widget.allTracks;
+    if (tracks.isNotEmpty && _currentIndex > 0) {
+      setState(() => _currentIndex--);
+      _controller.switchTrack(tracks[_currentIndex]);
+    } else {
+      _event.seekToStart();
+    }
+  }
+
+  void _onNext() {
+    final tracks = widget.allTracks;
+    if (tracks.isNotEmpty && _currentIndex < tracks.length - 1) {
+      setState(() => _currentIndex++);
+      _controller.switchTrack(tracks[_currentIndex]);
+    } else {
+      _event.seekToEnd();
     }
   }
 
@@ -195,33 +285,15 @@ class _MusicScreenState extends State<MusicScreen>
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      AppColors.musicPrimary.withValues(alpha: 0.8),
-                                      AppColors.tertiary.withValues(alpha: 0.8),
-                                    ],
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.album,
-                                    size: 120,
-                                    color: AppColors.white.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                              ),
+                              child: _CoverImage(url: _controller.currentTrack?.coverUrl),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 40),
-                      // 歌曲名 (Space Grotesk 风格，无 google_fonts 时用主题字体)
+                      // 歌曲名
                       Text(
-                        widget.track?.title ?? _controller.trackTitle,
+                        _controller.trackTitle,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.01,
@@ -229,9 +301,9 @@ class _MusicScreenState extends State<MusicScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // 歌手名 (Manrope 风格)
+                      // 歌手名
                       Text(
-                        widget.track?.artist ?? _controller.artist,
+                        _controller.artist,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppColors.secondaryFixed,
@@ -376,16 +448,7 @@ class _MusicScreenState extends State<MusicScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 IconButton(
-                                  onPressed: () => _event.shuffle(),
-                                  icon: Icon(
-                                    Icons.shuffle,
-                                    color: AppColors.onSurface.withValues(alpha: 0.6),
-                                  ),
-                                  iconSize: 32,
-                                ),
-                                const SizedBox(width: 24),
-                                IconButton(
-                                  onPressed: () => _event.skipPrevious(),
+                                  onPressed: _onPrev,
                                   icon: const Icon(Icons.skip_previous),
                                   iconSize: 40,
                                   color: AppColors.onSurface,
@@ -422,19 +485,10 @@ class _MusicScreenState extends State<MusicScreen>
                                 ),
                                 const SizedBox(width: 16),
                                 IconButton(
-                                  onPressed: () => _event.skipNext(),
+                                  onPressed: _onNext,
                                   icon: const Icon(Icons.skip_next),
                                   iconSize: 40,
                                   color: AppColors.onSurface,
-                                ),
-                                const SizedBox(width: 24),
-                                IconButton(
-                                  onPressed: () => _event.repeat(),
-                                  icon: Icon(
-                                    Icons.repeat,
-                                    color: AppColors.onSurface.withValues(alpha: 0.6),
-                                  ),
-                                  iconSize: 32,
                                 ),
                               ],
                             ),

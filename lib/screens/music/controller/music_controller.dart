@@ -14,6 +14,7 @@ class MusicController extends ChangeNotifier {
   }
 
   final MusicTrack? initialTrack;
+  MusicTrack? _currentTrack;
   final AudioPlayer _player = AudioPlayer();
   StreamSubscription? _positionSub;
   final Set<int> _triggeredSeconds = {};
@@ -23,8 +24,9 @@ class MusicController extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _duration = const Duration(seconds: 60);
 
-  String get trackTitle => initialTrack?.title ?? 'Stitch Colors';
-  String get artist => initialTrack?.artist ?? 'Chen Li';
+  MusicTrack? get currentTrack => _currentTrack ?? initialTrack;
+  String get trackTitle => currentTrack?.title ?? 'Stitch Colors';
+  String get artist => currentTrack?.artist ?? 'Chen Li';
 
   bool get isPlaying => _isPlaying;
   bool get syncEnabled => BleController.instance.autoSyncEnabled;
@@ -61,7 +63,18 @@ class MusicController extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    final streamUrl = initialTrack?.streamUrl;
+    _currentTrack = initialTrack;
+    await _loadTrack(_currentTrack);
+  }
+
+  /// 切换到指定曲目（上一首/下一首）
+  Future<void> switchTrack(MusicTrack track) async {
+    _currentTrack = track;
+    await _loadTrack(track);
+  }
+
+  Future<void> _loadTrack(MusicTrack? track) async {
+    final streamUrl = track?.streamUrl;
     if (_isPlayableUrl(streamUrl)) {
       try {
         await _player.setSource(UrlSource(streamUrl!));
@@ -111,8 +124,8 @@ class MusicController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void skipPrevious() => _player.seek(Duration.zero);
-  void skipNext() => _player.seek(_duration);
+  void seekToStart() => _player.seek(Duration.zero);
+  void seekToEnd() => _player.seek(_duration);
   void shuffle() => notifyListeners();
   void repeat() => notifyListeners();
 

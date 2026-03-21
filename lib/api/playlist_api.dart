@@ -38,10 +38,20 @@ class PlaylistItemDto {
   }
 }
 
-/// 调用后端 Python FastAPI GET /api/playlist，拉取陈粒歌单
-Future<List<PlaylistItemDto>> fetchPlaylist() async {
+/// 调用后端 GET /api/playlist，支持搜索与分页
+Future<List<PlaylistItemDto>> fetchPlaylist({
+  String keyword = '陈粒',
+  int limit = 20,
+  int offset = 0,
+}) async {
   try {
-    final uri = Uri.parse('$kPlaylistApiBase/api/playlist');
+    final uri = Uri.parse('$kPlaylistApiBase/api/playlist').replace(
+      queryParameters: {
+        'keyword': keyword,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+    );
     final resp = await http.get(uri).timeout(
       const Duration(seconds: 25),
       onTimeout: () => throw Exception('请求超时'),

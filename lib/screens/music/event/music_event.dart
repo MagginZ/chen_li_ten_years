@@ -8,8 +8,6 @@ class MusicEvent {
   void togglePlay() => _controller.togglePlay();
   void toggleSync() => _controller.toggleSync();
   void setProgress(double value) => _controller.setProgress(value);
-  void skipPrevious() => _controller.skipPrevious();
-  void skipNext() => _controller.skipNext();
-  void shuffle() => _controller.shuffle();
-  void repeat() => _controller.repeat();
+  void seekToStart() => _controller.seekToStart();
+  void seekToEnd() => _controller.seekToEnd();
 }

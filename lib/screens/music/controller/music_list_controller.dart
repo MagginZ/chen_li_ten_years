@@ -35,43 +35,84 @@ class MusicTrack {
 }
 
 class MusicListController extends ChangeNotifier {
-  static const String playlistName = '陈粒 · Starlight World Tour';
+  static const int pageSize = 20;
 
   List<MusicTrack> _tracks = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
-
-  /// API 失败时的兜底歌单（不再使用 mock）
-  static List<MusicTrack> get _fallbackTracks => const [
-    MusicTrack(id: '1', title: 'Stitch Colors', artist: 'Chen Li'),
-    MusicTrack(id: '2', title: '小半', artist: '陈粒'),
-    MusicTrack(id: '3', title: '奇妙能力歌', artist: '陈粒'),
-    MusicTrack(id: '4', title: '易燃易爆炸', artist: '陈粒'),
-    MusicTrack(id: '5', title: '走马', artist: '陈粒'),
-  ];
+  String _searchKeyword = '陈粒';
+  int _currentOffset = 0;
+  bool _hasMore = true;
 
   List<MusicTrack> get displayTracks => _tracks;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   String? get error => _error;
+  String get searchKeyword => _searchKeyword;
+  bool get hasMore => _hasMore;
   int _nowPlayingIndex = 0;
   int get nowPlayingIndex => _nowPlayingIndex;
   bool get syncEnabled => BleController.instance.autoSyncEnabled;
 
-  /// 从 API 拉取歌单
+  /// 搜索并加载第一页
+  Future<void> search(String keyword) async {
+    if (keyword.trim().isEmpty) return;
+    _searchKeyword = keyword.trim();
+    _currentOffset = 0;
+    _hasMore = true;
+    await _loadPage(append: false);
+  }
+
+  /// 加载第一页（默认关键词 陈粒）
   Future<void> loadPlaylist() async {
-    _isLoading = true;
-    _error = null;
+    _searchKeyword = '陈粒';
+    _currentOffset = 0;
+    _hasMore = true;
+    await _loadPage(append: false);
+  }
+
+  /// 加载更多（分页）
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    await _loadPage(append: true);
+  }
+
+  Future<void> _loadPage({required bool append}) async {
+    if (append) {
+      _isLoadingMore = true;
+    } else {
+      _isLoading = true;
+      _error = null;
+    }
     notifyListeners();
 
     try {
-      final dtos = await fetchPlaylist();
-      _tracks = dtos.map((d) => MusicTrack.fromDto(d)).toList();
-      _nowPlayingIndex = _tracks.isNotEmpty ? 0 : 0;
+      final dtos = await fetchPlaylist(
+        keyword: _searchKeyword,
+        limit: pageSize,
+        offset: append ? _currentOffset : 0,
+      );
+      final newTracks = dtos.map((d) => MusicTrack.fromDto(d)).toList();
+      _hasMore = newTracks.length >= pageSize;
+
+      if (append) {
+        _tracks = [..._tracks, ...newTracks];
+        _currentOffset = _tracks.length;
+      } else {
+        _tracks = newTracks;
+        _currentOffset = newTracks.length;
+        _nowPlayingIndex = _tracks.isNotEmpty ? 0 : 0;
+      }
+      _error = null;
     } catch (e) {
       _error = e.toString();
-      _tracks = List<MusicTrack>.from(_fallbackTracks);
+      if (!append) {
+        _tracks = [];
+      }
     } finally {
       _isLoading = false;
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
@@ -91,5 +132,9 @@ class MusicListController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void retry() => loadPlaylist();
+  void retry() {
+    _currentOffset = 0;
+    _hasMore = true;
+    _loadPage(append: false);
+  }
 }

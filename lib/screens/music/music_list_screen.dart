@@ -5,13 +5,15 @@ import '../../widgets/glass_container.dart';
 import '../../ble/ble_controller.dart';
 import 'controller/music_list_controller.dart';
 import 'event/music_list_event.dart';
-/// 歌单列表页：按 index.html 布局，使用主题色
+/// 歌单列表页：搜索、分页、播放
 class MusicListScreen extends StatefulWidget {
   const MusicListScreen({
     super.key,
+    required this.controller,
     required this.onTrackTap,
   });
 
+  final MusicListController controller;
   final void Function(MusicTrack track) onTrackTap;
 
   @override
@@ -19,33 +21,31 @@ class MusicListScreen extends StatefulWidget {
 }
 
 class _MusicListScreenState extends State<MusicListScreen> {
-  late final MusicListController _controller;
   late final MusicListEvent _event;
 
   @override
   void initState() {
     super.initState();
-    _controller = MusicListController();
-    _event = MusicListEvent(_controller);
-    _controller.loadPlaylist();
+    _event = MusicListEvent(widget.controller);
+    widget.controller.loadPlaylist();
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([_controller, BleController.instance]),
+      listenable: Listenable.merge([widget.controller, BleController.instance]),
       builder: (context, _) {
-        final tracks = _controller.displayTracks;
+        final tracks = widget.controller.displayTracks;
         if (tracks.isEmpty) {
           return Scaffold(
             backgroundColor: AppColors.background,
-            body: _controller.isLoading
+            body: widget.controller.isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                : Center(child: TextButton(onPressed: () => _controller.retry(), child: const Text('重试加载'))),
+                : Center(child: TextButton(onPressed: () => widget.controller.retry(), child: const Text('重试加载'))),
           );
         }
-        final nowPlaying = _controller.nowPlayingIndex < tracks.length
-            ? tracks[_controller.nowPlayingIndex]
+        final nowPlaying = widget.controller.nowPlayingIndex < tracks.length
+            ? tracks[widget.controller.nowPlayingIndex]
             : null;
 
         return Scaffold(
@@ -70,7 +70,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
                   ),
                 ),
               ),
-              if (_controller.isLoading)
+              if (widget.controller.isLoading)
                 const Center(child: CircularProgressIndicator(color: AppColors.primary)),
               SafeArea(
                 child: SingleChildScrollView(
@@ -79,11 +79,17 @@ class _MusicListScreenState extends State<MusicListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
+                      _SearchBar(
+                        initialKeyword: widget.controller.searchKeyword,
+                        onSearch: (kw) => widget.controller.search(kw),
+                        isLoading: widget.controller.isLoading,
+                      ),
+                      const SizedBox(height: 16),
                       _PlaylistHeader(
-                        controller: _controller,
+                        controller: widget.controller,
                         event: _event,
                       ),
-                      if (_controller.error != null) ...[
+                      if (widget.controller.error != null) ...[
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -104,7 +110,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => _controller.retry(),
+                                onPressed: () => widget.controller.retry(),
                                 child: const Text('重试'),
                               ),
                             ],
@@ -113,16 +119,13 @@ class _MusicListScreenState extends State<MusicListScreen> {
                       ],
                       const SizedBox(height: 32),
                       if (nowPlaying != null)
-                        _NowPlayingBento(
-                          track: nowPlaying,
-                          onShuffle: () {},
-                          onFavorite: () {},
-                        ),
+                        _NowPlayingBento(track: nowPlaying),
                       const SizedBox(height: 24),
                       _TrackListSection(
-                        controller: _controller,
+                        controller: widget.controller,
                         event: _event,
                         onTrackTap: widget.onTrackTap,
+                        onLoadMore: () => widget.controller.loadMore(),
                       ),
                     ],
                   ),
@@ -165,7 +168,7 @@ class _PlaylistHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                MusicListController.playlistName,
+                '搜索: ${controller.searchKeyword}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -229,125 +232,146 @@ class _PlaylistHeader extends StatelessWidget {
   }
 }
 
-class _NowPlayingBento extends StatelessWidget {
-  const _NowPlayingBento({
-    required this.track,
-    required this.onShuffle,
-    required this.onFavorite,
+class _SearchBar extends StatefulWidget {
+  const _SearchBar({
+    required this.initialKeyword,
+    required this.onSearch,
+    required this.isLoading,
   });
 
-  final MusicTrack track;
-  final VoidCallback onShuffle;
-  final VoidCallback onFavorite;
+  final String initialKeyword;
+  final void Function(String keyword) onSearch;
+  final bool isLoading;
+
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  late final TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.initialKeyword);
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 用 AspectRatio 约束高度，避免 unbounded height 导致布局崩溃
-    return AspectRatio(
-      aspectRatio: 6 / 4,
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 大图：Now Playing
           Expanded(
-            flex: 4,
-            child: AspectRatio(
-                aspectRatio: 1,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _TrackCoverImage(url: track.coverUrl),
-                      GradientDecoration(
-                        colors: [
-                          Colors.transparent,
-                          AppColors.black.withValues(alpha: 0.8),
-                        ],
-                      ),
-                      Positioned(
-                        left: 16,
-                        bottom: 16,
-                        right: 16,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                'LIVE SYNC',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: AppColors.onPrimaryContainer,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              track.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.onSurface,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              track.artist,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.onSurface.withValues(alpha: 0.7),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+            child: TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                hintText: '搜索歌手或歌曲...',
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                suffixIcon: widget.isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      )
+                    : null,
               ),
-            ),
-          const SizedBox(width: 16),
-          // 右侧按钮
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                Expanded(
-                  child: _BentoButton(
-                    icon: Icons.shuffle,
-                    color: AppColors.primary,
-                    onTap: onShuffle,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _BentoButton(
-                    icon: Icons.favorite,
-                    color: AppColors.secondary,
-                    onTap: onFavorite,
-                  ),
-                ),
-              ],
+              onSubmitted: (v) => widget.onSearch(v),
             ),
           ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: () => widget.onSearch(_textController.text),
+            icon: const Icon(Icons.search),
+            color: AppColors.primary,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _NowPlayingBento extends StatelessWidget {
+  const _NowPlayingBento({required this.track});
+
+  final MusicTrack track;
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+            _TrackCoverImage(url: track.coverUrl),
+            GradientDecoration(
+              colors: [
+                Colors.transparent,
+                AppColors.black.withValues(alpha: 0.8),
+              ],
+            ),
+            Positioned(
+              left: 16,
+              bottom: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'NOW PLAYING',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    track.title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    track.artist,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.onSurface.withValues(alpha: 0.7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -425,57 +449,18 @@ class GradientDecoration extends StatelessWidget {
   }
 }
 
-class _BentoButton extends StatelessWidget {
-  const _BentoButton({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.glassSurface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.white.withValues(alpha: 0.05),
-                ),
-              ),
-              child: Center(
-                child: Icon(icon, size: 40, color: color),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _TrackListSection extends StatelessWidget {
   const _TrackListSection({
     required this.controller,
     required this.event,
     required this.onTrackTap,
+    required this.onLoadMore,
   });
 
   final MusicListController controller;
   final MusicListEvent event;
   final void Function(MusicTrack track) onTrackTap;
+  final VoidCallback onLoadMore;
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +468,8 @@ class _TrackListSection extends StatelessWidget {
     final nowPlayingIdx = controller.nowPlayingIndex;
 
     return Column(
-      children: List.generate(tracks.length, (i) {
+      children: [
+        ...List.generate(tracks.length, (i) {
         final track = tracks[i];
         final isNowPlaying = i == nowPlayingIdx;
 
@@ -499,6 +485,24 @@ class _TrackListSection extends StatelessWidget {
           ),
         );
       }),
+        if (controller.hasMore)
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 24),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: controller.isLoadingMore ? null : onLoadMore,
+                child: controller.isLoadingMore
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('加载更多'),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

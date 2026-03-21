@@ -12,12 +12,17 @@ class MusicTabScreen extends StatefulWidget {
 }
 
 class _MusicTabScreenState extends State<MusicTabScreen> {
+  final MusicListController _listController = MusicListController();
   bool _showPlayer = false;
   MusicTrack? _selectedTrack;
+  int _selectedIndex = 0;
 
   void _onTrackTap(MusicTrack track) {
+    final tracks = _listController.displayTracks;
+    final idx = tracks.indexWhere((t) => t.id == track.id);
     setState(() {
       _selectedTrack = track;
+      _selectedIndex = idx >= 0 ? idx : 0;
       _showPlayer = true;
     });
   }
@@ -34,9 +39,14 @@ class _MusicTabScreenState extends State<MusicTabScreen> {
     if (_showPlayer) {
       return MusicScreen(
         track: _selectedTrack,
+        allTracks: _listController.displayTracks,
+        initialIndex: _selectedIndex,
         onBack: _onBack,
       );
     }
-    return MusicListScreen(onTrackTap: _onTrackTap);
+    return MusicListScreen(
+      controller: _listController,
+      onTrackTap: _onTrackTap,
+    );
   }
 }
