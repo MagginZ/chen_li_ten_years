@@ -33,10 +33,29 @@ flutter run -d chrome(浏览器)
 
 ```
 
+## 后端 API
+
+FastAPI 歌单服务，提供 `/api/playlist` 接口（陈粒音乐）。
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+- 服务地址: `http://localhost:8000`
+- 局域网访问: `http://<电脑IP>:8000`（如 iPhone 同网访问）
+
 ## 项目结构
 
 ```
 chen_li_ten_years/
+├── backend/                 # FastAPI 歌单 API
+│   ├── main.py
+│   ├── requirements.txt
+│   └── README.md
 ├── lib/
 │   ├── main.dart              # 应用入口
 │   ├── theme/
