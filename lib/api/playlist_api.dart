@@ -43,7 +43,7 @@ Future<List<PlaylistItemDto>> fetchPlaylist() async {
   try {
     final uri = Uri.parse('$kPlaylistApiBase/api/playlist');
     final resp = await http.get(uri).timeout(
-      const Duration(seconds: 10),
+      const Duration(seconds: 25),
       onTimeout: () => throw Exception('请求超时'),
     );
     if (resp.statusCode != 200) {

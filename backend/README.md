@@ -4,8 +4,8 @@ FastAPI 后端，为 Flutter 应用提供歌单接口。搜索 **陈粒 (Chen Li
 
 ## 环境
 
-- Python 3.10+
-- FastAPI, uvicorn, ytmusicapi
+- Python 3.9+
+- FastAPI, uvicorn, pyncm（网易云音乐）
 
 ## 安装
 
@@ -59,5 +59,5 @@ python main.py
 
 ## 数据源
 
-- **ytmusicapi**: 搜索「陈粒」获取实时数据；封面优先使用高分辨率
-- **Mock**: 当 ytmusicapi 不可用或限流时，返回内置陈粒歌单
+- **pyncm**: 网易云音乐 API，搜索「陈粒」获取歌单；`streamUrl` 为直接可播放的音频链接
+- **Mock**: 当 pyncm 不可用或失败时，返回内置陈粒歌单（无真实播放链接）

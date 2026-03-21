@@ -52,31 +52,31 @@ class MusicController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 是否为可直接播放的音频 URL（排除 YouTube）
-  bool _isDirectAudioUrl(String? url) {
+  /// 是否为可播放的音频 URL（直接链接，如网易云返回的 mp3/m4a）
+  bool _isPlayableUrl(String? url) {
     if (url == null || url.isEmpty) return false;
     final lower = url.toLowerCase();
     if (lower.contains('youtube') || lower.contains('youtu.be')) return false;
-    return lower.contains('.mp3') ||
-        lower.contains('.m4a') ||
-        lower.contains('.aac') ||
-        lower.contains('.ogg') ||
-        lower.contains('.wav');
+    return lower.startsWith('http://') || lower.startsWith('https://');
   }
 
   Future<void> init() async {
     final streamUrl = initialTrack?.streamUrl;
-    if (streamUrl != null && _isDirectAudioUrl(streamUrl)) {
+    if (_isPlayableUrl(streamUrl)) {
       try {
-        await _player.setSource(UrlSource(streamUrl));
-        debugPrint('[MusicController] Playing from API: $streamUrl');
+        await _player.setSource(UrlSource(streamUrl!));
+        debugPrint('[MusicController] Playing from NCM: $streamUrl');
+        await _player.resume();
+        _isPlaying = true;
+        notifyListeners();
         return;
       } catch (e) {
-        debugPrint('[MusicController] UrlSource failed, fallback to asset: $e');
+        debugPrint('[MusicController] UrlSource failed, fallback: $e');
       }
     }
     try {
       await _player.setSource(AssetSource('assets/audio/mock_music.mp3'));
+      debugPrint('[MusicController] Using fallback asset');
     } catch (e) {
       debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
       try {
