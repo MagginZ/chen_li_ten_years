@@ -71,7 +71,7 @@ class _MusicScreenState extends State<MusicScreen>
   @override
   void initState() {
     super.initState();
-    _controller = MusicController();
+    _controller = MusicController(initialTrack: widget.track);
     _event = MusicEvent(_controller);
     _controller.init();
 

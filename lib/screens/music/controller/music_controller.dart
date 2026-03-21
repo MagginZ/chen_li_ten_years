@@ -2,8 +2,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../ble/ble_controller.dart' show BleController, syncScript;
+import 'music_list_controller.dart';
 
 class MusicController extends ChangeNotifier {
+  MusicController({this.initialTrack}) {
+    _player.onDurationChanged.listen((d) {
+      _duration = d;
+      notifyListeners();
+    });
+    _player.onPositionChanged.listen(_onPositionChanged);
+  }
+
+  final MusicTrack? initialTrack;
   final AudioPlayer _player = AudioPlayer();
   StreamSubscription? _positionSub;
   final Set<int> _triggeredSeconds = {};
@@ -13,22 +23,14 @@ class MusicController extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _duration = const Duration(seconds: 60);
 
-  String get trackTitle => 'Stitch Colors';
-  String get artist => 'Chen Li';
+  String get trackTitle => initialTrack?.title ?? 'Stitch Colors';
+  String get artist => initialTrack?.artist ?? 'Chen Li';
 
   bool get isPlaying => _isPlaying;
   bool get syncEnabled => BleController.instance.autoSyncEnabled;
   double get progress => _progress;
   Duration get position => _position;
   Duration get duration => _duration;
-
-  MusicController() {
-    _player.onDurationChanged.listen((d) {
-      _duration = d;
-      notifyListeners();
-    });
-    _player.onPositionChanged.listen(_onPositionChanged);
-  }
 
   void _onPositionChanged(Duration pos) {
     _position = pos;
@@ -50,11 +52,33 @@ class MusicController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 是否为可直接播放的音频 URL（排除 YouTube）
+  bool _isDirectAudioUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    final lower = url.toLowerCase();
+    if (lower.contains('youtube') || lower.contains('youtu.be')) return false;
+    return lower.contains('.mp3') ||
+        lower.contains('.m4a') ||
+        lower.contains('.aac') ||
+        lower.contains('.ogg') ||
+        lower.contains('.wav');
+  }
+
   Future<void> init() async {
+    final streamUrl = initialTrack?.streamUrl;
+    if (streamUrl != null && _isDirectAudioUrl(streamUrl)) {
+      try {
+        await _player.setSource(UrlSource(streamUrl));
+        debugPrint('[MusicController] Playing from API: $streamUrl');
+        return;
+      } catch (e) {
+        debugPrint('[MusicController] UrlSource failed, fallback to asset: $e');
+      }
+    }
     try {
       await _player.setSource(AssetSource('assets/audio/mock_music.mp3'));
     } catch (e) {
-      debugPrint('[MusicController] Asset load failed, using UrlSource: $e');
+      debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
       try {
         await _player.setSource(UrlSource(
           'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',

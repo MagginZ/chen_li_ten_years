@@ -27,6 +27,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
     super.initState();
     _controller = MusicListController();
     _event = MusicListEvent(_controller);
+    _controller.loadPlaylist();
   }
 
   @override
@@ -34,11 +35,23 @@ class _MusicListScreenState extends State<MusicListScreen> {
     return ListenableBuilder(
       listenable: Listenable.merge([_controller, BleController.instance]),
       builder: (context, _) {
+        final tracks = _controller.displayTracks;
+        if (tracks.isEmpty) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: _controller.isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : Center(child: TextButton(onPressed: () => _controller.retry(), child: const Text('重试加载'))),
+          );
+        }
+        final nowPlaying = _controller.nowPlayingIndex < tracks.length
+            ? tracks[_controller.nowPlayingIndex]
+            : null;
+
         return Scaffold(
           backgroundColor: AppColors.background,
           body: Stack(
             children: [
-              // 顶部光晕
               Positioned(
                 top: -80,
                 right: -80,
@@ -57,6 +70,8 @@ class _MusicListScreenState extends State<MusicListScreen> {
                   ),
                 ),
               ),
+              if (_controller.isLoading)
+                const Center(child: CircularProgressIndicator(color: AppColors.primary)),
               SafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
@@ -64,20 +79,46 @@ class _MusicListScreenState extends State<MusicListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      // Hero: PLAYLIST + Sync Light
                       _PlaylistHeader(
                         controller: _controller,
                         event: _event,
                       ),
+                      if (_controller.error != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorContainer.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.warning_amber, color: AppColors.error),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '歌单加载失败，使用默认列表',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.onErrorContainer,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => _controller.retry(),
+                                child: const Text('重试'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 32),
-                      // Featured: Now Playing Bento
-                      _NowPlayingBento(
-                        track: MusicListController.tracks[_controller.nowPlayingIndex],
-                        onShuffle: () {},
-                        onFavorite: () {},
-                      ),
+                      if (nowPlaying != null)
+                        _NowPlayingBento(
+                          track: nowPlaying,
+                          onShuffle: () {},
+                          onFavorite: () {},
+                        ),
                       const SizedBox(height: 24),
-                      // Track List
                       _TrackListSection(
                         controller: _controller,
                         event: _event,
