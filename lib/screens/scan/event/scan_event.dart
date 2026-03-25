@@ -8,7 +8,7 @@ class ScanEvent {
   ScanEvent(this._controller);
 
   final ScanController _controller;
-  StreamSubscription? _scanSubscription;
+  StreamSubscription<List<ScanResult>>? _scanSubscription;
 
   void rescan() {
     _controller.clearDevices();
@@ -16,8 +16,8 @@ class ScanEvent {
     _startScan();
   }
 
-  void _startScan() async {
-    _scanSubscription?.cancel();
+  Future<void> _startScan() async {
+    await _scanSubscription?.cancel();
 
     try {
       _scanSubscription = FlutterBluePlus.scanResults.listen((results) {
@@ -33,12 +33,12 @@ class ScanEvent {
               : (rssi > -75 ? AppColors.tertiary : AppColors.error);
 
           _controller.addDevice(ScanDevice(
+            device: r.device,
             name: name,
             id: id,
             signal: signal,
             signalColor: signalColor,
             isPrimary: rssi > -60,
-            isMock: false,
           ));
         }
       });
@@ -48,13 +48,14 @@ class ScanEvent {
       debugPrint('[ScanEvent] Bluetooth scan error: $e');
     } finally {
       await FlutterBluePlus.stopScan();
+      await _scanSubscription?.cancel();
+      _scanSubscription = null;
       _controller.setScanning(false);
-      _scanSubscription?.cancel();
     }
   }
 
-  void connectDevice(int index) {
-    _controller.connectDevice(index);
+  Future<void> connectDevice(int index) async {
+    await _controller.connectDevice(index);
   }
 
   void dispose() {

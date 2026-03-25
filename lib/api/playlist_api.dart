@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// 后端 Python FastAPI 服务地址
-/// - Web/模拟器: 默认 localhost
-/// - iPhone 真机: 使用 --dart-define=API_BASE=http://<电脑IP>:8000
+/// - 默认使用当前开发机局域网 IP，便于真机调试
+/// - 可通过 --dart-define=API_BASE=http://<电脑IP>:8000 覆盖
 const String kPlaylistApiBase = String.fromEnvironment(
   'API_BASE',
   defaultValue: 'http://localhost:8000',

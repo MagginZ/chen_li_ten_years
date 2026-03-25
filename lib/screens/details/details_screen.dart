@@ -17,6 +17,14 @@ class DetailsScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge([controller, ble]),
       builder: (context, _) {
+        final connectedDevice = ble.connectedDevice;
+        final deviceName = connectedDevice?.platformName.isNotEmpty == true
+            ? connectedDevice!.platformName
+            : 'LIGHTSTICK';
+        final deviceId = connectedDevice?.remoteId.str ?? 'Not connected';
+        final connectionLabel = ble.isConnected ? 'CONNECTED' : 'DISCONNECTED';
+        final connectionColor = ble.isConnected ? AppColors.secondary : AppColors.error;
+
         return Scaffold(
           backgroundColor: AppColors.background,
           body: Stack(
@@ -85,9 +93,9 @@ class DetailsScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.secondary.withOpacity(0.1),
+                          color: connectionColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+                          border: Border.all(color: connectionColor.withOpacity(0.2)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -96,11 +104,11 @@ class DetailsScreen extends StatelessWidget {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: AppColors.secondary,
+                                color: connectionColor,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.secondary.withOpacity(0.5),
+                                    color: connectionColor.withOpacity(0.5),
                                     blurRadius: 8,
                                   ),
                                 ],
@@ -108,9 +116,9 @@ class DetailsScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'CONNECTED',
+                              connectionLabel,
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: AppColors.secondary,
+                                color: connectionColor,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.5,
                               ),
@@ -120,7 +128,7 @@ class DetailsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'PULSE STICK V2',
+                        deviceName.toUpperCase(),
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.01,
@@ -128,7 +136,7 @@ class DetailsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'ID: NP-LIGHT-8842-X',
+                        'ID: $deviceId',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),

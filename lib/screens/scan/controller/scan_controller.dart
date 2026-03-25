@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_colors.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../../ble/ble_controller.dart';
 
 class ScanDevice {
+  final BluetoothDevice device;
   final String name;
   final String id;
   final String signal;
   final Color signalColor;
   final bool isPrimary;
-  final bool isMock;
 
   const ScanDevice({
+    required this.device,
     required this.name,
     required this.id,
     required this.signal,
     required this.signalColor,
     required this.isPrimary,
-    this.isMock = false,
   });
 }
 
@@ -25,21 +25,8 @@ class ScanController extends ChangeNotifier {
   final List<ScanDevice> _devices = [];
   final Set<String> _seenIds = {};
 
-  static const ScanDevice mockDevice = ScanDevice(
-    name: 'Official Lightstick V2',
-    id: 'LP-8842-X',
-    signal: 'Excellent',
-    signalColor: AppColors.secondary,
-    isPrimary: true,
-    isMock: true,
-  );
-
   bool get isScanning => _isScanning;
-  List<ScanDevice> get devices {
-    final list = <ScanDevice>[mockDevice];
-    list.addAll(_devices);
-    return list;
-  }
+  List<ScanDevice> get devices => List.unmodifiable(_devices);
 
   void setScanning(bool value) {
     _isScanning = value;
@@ -59,15 +46,10 @@ class ScanController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void connectDevice(int index) {
-    final list = devices;
-    if (index < 0 || index >= list.length) return;
-    final d = list[index];
-    if (d.isMock) {
-      BleController.instance.mockConnect();
-    } else {
-      // TODO: 真实设备连接
-      notifyListeners();
-    }
+  Future<void> connectDevice(int index) async {
+    if (index < 0 || index >= _devices.length) return;
+    final device = _devices[index];
+    await BleController.instance.connect(device.device);
+    notifyListeners();
   }
 }
