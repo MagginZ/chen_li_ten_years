@@ -149,9 +149,13 @@ class BleController extends ChangeNotifier {
       return;
     }
 
-    await characteristic.write(
-      data,
-      withoutResponse: characteristic.properties.writeWithoutResponse,
-    );
+    try {
+      await characteristic.write(
+        data,
+        withoutResponse: characteristic.properties.writeWithoutResponse,
+      );
+    } catch (e) {
+      debugPrint('[BleController] Write error: $e');
+    }
   }
 }

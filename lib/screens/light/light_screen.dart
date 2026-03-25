@@ -13,6 +13,12 @@ class LightScreen extends StatefulWidget {
 }
 
 class _LightScreenState extends State<LightScreen> {
+  static const double _wheelSize = 320;
+  static const double _wheelOuterRadius = _wheelSize / 2;
+  static const double _wheelInnerRadius = 60;
+  static const double _pickerSize = 40;
+  static const double _pickerTrackRadius = (_wheelInnerRadius + _wheelOuterRadius - _pickerSize) / 2;
+
   late final LightController _controller;
   late final LightEvent _event;
 
@@ -23,7 +29,6 @@ class _LightScreenState extends State<LightScreen> {
     _event = LightEvent(_controller);
   }
 
-  /// 从色盘点击位置计算 Color (基于角度 -> 色相)
   Color _colorFromPosition(Offset localPos, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final delta = localPos - center;
@@ -32,11 +37,29 @@ class _LightScreenState extends State<LightScreen> {
     return HSVColor.fromAHSV(1.0, hue * 360, 1.0, 1.0).toColor();
   }
 
+  Offset _pickerOffsetFromPosition(Offset localPos, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final delta = localPos - center;
+    final distance = delta.distance;
+    if (distance == 0) {
+      return Offset(center.dx, center.dy - _pickerTrackRadius);
+    }
+
+    final normalized = Offset(delta.dx / distance, delta.dy / distance);
+
+    return Offset(
+      center.dx + normalized.dx * _pickerTrackRadius,
+      center.dy + normalized.dy * _pickerTrackRadius,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
+        final pickerOffset = _controller.pickerOffset;
+
         return Scaffold(
           backgroundColor: AppColors.background,
           body: Stack(
@@ -117,124 +140,134 @@ class _LightScreenState extends State<LightScreen> {
                       const SizedBox(height: 40),
                       Center(
                         child: SizedBox(
-                          width: 320,
-                          height: 320,
+                          width: _wheelSize,
+                          height: _wheelSize,
                           child: GestureDetector(
                             onTapDown: (d) {
-                              final color = _colorFromPosition(d.localPosition, const Size(320, 320));
-                              _event.selectColor(color);
+                              final color = _colorFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
+                              final offset = _pickerOffsetFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
+                              _event.commitColor(color, offset);
+                            },
+                            onPanStart: (d) {
+                              final color = _colorFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
+                              final offset = _pickerOffsetFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
+                              _event.previewColor(color, offset);
                             },
                             onPanUpdate: (d) {
-                              final color = _colorFromPosition(d.localPosition, const Size(320, 320));
-                              _event.selectColor(color);
+                              final color = _colorFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
+                              final offset = _pickerOffsetFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
+                              _event.previewColor(color, offset);
+                            },
+                            onPanEnd: (_) {
+                              _event.commitColor(_controller.selectedColor, _controller.pickerOffset);
                             },
                             child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: 320,
-                                height: 320,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      blurRadius: 80,
-                                      spreadRadius: 40,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 320,
-                                height: 320,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surfaceContainerHigh,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.black.withOpacity(0.5),
-                                      blurRadius: 30,
-                                    ),
-                                  ],
-                                ),
-                                child: Container(
-                                  decoration: const BoxDecoration(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: _wheelSize,
+                                  height: _wheelSize,
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    gradient: SweepGradient(
-                                      colors: [
-                                        Colors.red,
-                                        Colors.purple,
-                                        Colors.blue,
-                                        Colors.cyan,
-                                        Colors.green,
-                                        Colors.yellow,
-                                        Colors.red,
-                                      ],
-                                    ),
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Positioned(
-                                        top: 80,
-                                        left: 80,
-                                        child: Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: _controller.selectedColor,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: AppColors.surface,
-                                              width: 4,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.black.withOpacity(0.3),
-                                                blurRadius: 10,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        width: 120,
-                                        height: 120,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.surface,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.palette,
-                                              color: AppColors.primary,
-                                              size: 40,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'Hue Control',
-                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: AppColors.onSurface.withOpacity(0.4),
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 1,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        blurRadius: 80,
+                                        spreadRadius: 40,
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                            ],
+                                Container(
+                                  width: _wheelSize,
+                                  height: _wheelSize,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceContainerHigh,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.black.withOpacity(0.5),
+                                        blurRadius: 30,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: SweepGradient(
+                                        colors: [
+                                          Colors.red,
+                                          Colors.purple,
+                                          Colors.blue,
+                                          Colors.cyan,
+                                          Colors.green,
+                                          Colors.yellow,
+                                          Colors.red,
+                                        ],
+                                      ),
+                                    ),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Positioned(
+                                          left: pickerOffset.dx - (_pickerSize / 2),
+                                          top: pickerOffset.dy - (_pickerSize / 2),
+                                          child: Container(
+                                            width: _pickerSize,
+                                            height: _pickerSize,
+                                            decoration: BoxDecoration(
+                                              color: _controller.selectedColor,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: AppColors.surface,
+                                                width: 4,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          width: 120,
+                                          height: 120,
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.surface,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.palette,
+                                                color: AppColors.primary,
+                                                size: 40,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Hue Control',
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                  color: AppColors.onSurface.withOpacity(0.4),
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 1,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
                       const SizedBox(height: 40),
                       GlassContainer(
                         padding: const EdgeInsets.all(24),

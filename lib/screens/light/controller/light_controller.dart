@@ -6,6 +6,7 @@ class LightController extends ChangeNotifier {
   String _selectedMode = 'Standard';
   int _selectedPreset = 0;
   Color _selectedColor = AppColors.primary;
+  Offset _pickerOffset = const Offset(160, 160);
 
   static const List<Map<String, dynamic>> modes = [
     {'name': 'Standard', 'icon': Icons.radio_button_checked},
@@ -26,6 +27,7 @@ class LightController extends ChangeNotifier {
   String get selectedMode => _selectedMode;
   int get selectedPreset => _selectedPreset;
   Color get selectedColor => _selectedColor;
+  Offset get pickerOffset => _pickerOffset;
 
   void setBrightness(double value) {
     _brightness = value.clamp(0.0, 1.0);
@@ -45,6 +47,11 @@ class LightController extends ChangeNotifier {
 
   void setColor(Color color) {
     _selectedColor = color;
+    notifyListeners();
+  }
+
+  void setPickerOffset(Offset offset) {
+    _pickerOffset = offset;
     notifyListeners();
   }
 
