@@ -36,6 +36,33 @@ flutter run -d chrome          # 浏览器
 flutter run -d <device-id>     # 指定设备
 ```
 
+### 打 Android APK
+
+1. 安装 Android SDK（Android Studio 或 `flutter doctor` 提示的路径）。
+2. 在项目根目录执行：
+
+```bash
+cd chen_li_ten_years
+flutter pub get
+# Release 单包（通用 arm64-v8a，体积适中）
+flutter build apk --release
+```
+
+3. 生成的 APK 路径：
+
+```
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+4. **可选**：按 ABI 分包（体积更小，需分别安装对应架构）：
+
+```bash
+flutter build apk --release --split-per-abi
+# 输出在 build/app/outputs/flutter-apk/ 下，如 app-armeabi-v7a-release.apk 等
+```
+
+5. 首次构建前可运行 `flutter doctor -v` 检查 Android toolchain。
+
 ### 在 iPhone 真机上运行
 
 1. **连接 iPhone**：用数据线连接 Mac，手机上信任此电脑
