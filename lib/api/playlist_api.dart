@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 /// - 可通过 --dart-define=API_BASE=http://<电脑IP>:8000 覆盖
 const String kPlaylistApiBase = String.fromEnvironment(
   'API_BASE',
-  defaultValue: 'http://localhost:8000',
+  defaultValue: 'http://172.20.0.240:8000',
 );
 
 /// 歌单项（API 响应格式）

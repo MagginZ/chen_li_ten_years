@@ -107,18 +107,19 @@ class _CoverImage extends StatelessWidget {
   }
 }
 
+/// 播放详情：与 [MusicListScreen] 共用 [MusicListController] + 外层持有的 [MusicController]，切歌时列表高亮同步。
 class MusicScreen extends StatefulWidget {
   const MusicScreen({
     super.key,
-    this.track,
-    this.allTracks = const [],
-    this.initialIndex = 0,
+    required this.listController,
+    required this.playback,
+    required this.event,
     this.onBack,
   });
 
-  final MusicTrack? track;
-  final List<MusicTrack> allTracks;
-  final int initialIndex;
+  final MusicListController listController;
+  final MusicController playback;
+  final MusicEvent event;
   final VoidCallback? onBack;
 
   @override
@@ -127,21 +128,16 @@ class MusicScreen extends StatefulWidget {
 
 class _MusicScreenState extends State<MusicScreen>
     with SingleTickerProviderStateMixin {
-  late final MusicController _controller;
-  late final MusicEvent _event;
   late final AnimationController _coverAnimController;
   late final Animation<double> _coverScale;
-  late int _currentIndex;
   bool _coverAnimPlaying = false;
+
+  MusicController get _playback => widget.playback;
+  MusicEvent get _event => widget.event;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    _controller = MusicController(initialTrack: widget.track);
-    _event = MusicEvent(_controller);
-    _controller.init();
-
     _coverAnimController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -154,15 +150,14 @@ class _MusicScreenState extends State<MusicScreen>
   @override
   void dispose() {
     _coverAnimController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
   void _updateCoverAnimation() {
-    if (_coverAnimPlaying == _controller.isPlaying) return;
-    _coverAnimPlaying = _controller.isPlaying;
+    if (_coverAnimPlaying == _playback.isPlaying) return;
+    _coverAnimPlaying = _playback.isPlaying;
 
-    if (_controller.isPlaying) {
+    if (_playback.isPlaying) {
       _coverAnimController.repeat(reverse: true);
     } else {
       _coverAnimController.stop();
@@ -171,20 +166,32 @@ class _MusicScreenState extends State<MusicScreen>
   }
 
   void _onPrev() {
-    final tracks = widget.allTracks;
-    if (tracks.isNotEmpty && _currentIndex > 0) {
-      setState(() => _currentIndex--);
-      _controller.switchTrack(tracks[_currentIndex]);
+    final tracks = widget.listController.displayTracks;
+    if (tracks.isEmpty) {
+      _event.seekToStart();
+      return;
+    }
+    final i = widget.listController.nowPlayingIndex;
+    if (i > 0) {
+      final newIdx = i - 1;
+      widget.listController.selectTrack(newIdx);
+      _playback.switchTrack(tracks[newIdx]);
     } else {
       _event.seekToStart();
     }
   }
 
   void _onNext() {
-    final tracks = widget.allTracks;
-    if (tracks.isNotEmpty && _currentIndex < tracks.length - 1) {
-      setState(() => _currentIndex++);
-      _controller.switchTrack(tracks[_currentIndex]);
+    final tracks = widget.listController.displayTracks;
+    if (tracks.isEmpty) {
+      _event.seekToEnd();
+      return;
+    }
+    final i = widget.listController.nowPlayingIndex;
+    if (i < tracks.length - 1) {
+      final newIdx = i + 1;
+      widget.listController.selectTrack(newIdx);
+      _playback.switchTrack(tracks[newIdx]);
     } else {
       _event.seekToEnd();
     }
@@ -199,7 +206,11 @@ class _MusicScreenState extends State<MusicScreen>
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([_controller, BleController.instance]),
+      listenable: Listenable.merge([
+        _playback,
+        widget.listController,
+        BleController.instance,
+      ]),
       builder: (context, _) {
         _updateCoverAnimation();
         return Scaffold(
@@ -284,7 +295,7 @@ class _MusicScreenState extends State<MusicScreen>
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
-                                child: _CoverImage(url: _controller.currentTrack?.coverUrl),
+                                child: _CoverImage(url: _playback.currentTrack?.coverUrl),
                               ),
                             ),
                           ),
@@ -292,7 +303,7 @@ class _MusicScreenState extends State<MusicScreen>
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        _controller.trackTitle,
+                        _playback.trackTitle,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.01,
@@ -301,7 +312,7 @@ class _MusicScreenState extends State<MusicScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _controller.artist,
+                        _playback.artist,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppColors.secondaryFixed,
@@ -336,7 +347,7 @@ class _MusicScreenState extends State<MusicScreen>
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _controller.syncEnabled
+                                    _playback.syncEnabled
                                         ? '随节拍同步中…'
                                         : '已关闭同步',
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -345,12 +356,12 @@ class _MusicScreenState extends State<MusicScreen>
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => _event.toggleSync(),
+                              onTap: _event.toggleSync,
                               child: Container(
                                 width: 56,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: _controller.syncEnabled
+                                  color: _playback.syncEnabled
                                       ? AppColors.musicPrimary
                                       : AppColors.surfaceVariant,
                                   borderRadius: BorderRadius.circular(14),
@@ -358,7 +369,7 @@ class _MusicScreenState extends State<MusicScreen>
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: Align(
-                                    alignment: _controller.syncEnabled
+                                    alignment: _playback.syncEnabled
                                         ? Alignment.centerRight
                                         : Alignment.centerLeft,
                                     child: Container(
@@ -401,7 +412,7 @@ class _MusicScreenState extends State<MusicScreen>
                                 trackShape: const RoundedRectSliderTrackShape(),
                               ),
                               child: Slider(
-                                value: _controller.progress.clamp(0.0, 1.0),
+                                value: _playback.progress.clamp(0.0, 1.0),
                                 onChanged: (v) => _event.setProgress(v),
                               ),
                             ),
@@ -410,14 +421,14 @@ class _MusicScreenState extends State<MusicScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  _formatDuration(_controller.position),
+                                  _formatDuration(_playback.position),
                                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     fontFamily: 'monospace',
                                     color: AppColors.onSurfaceVariant,
                                   ),
                                 ),
                                 Text(
-                                  _formatDuration(_controller.duration),
+                                  _formatDuration(_playback.duration),
                                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     fontFamily: 'monospace',
                                     color: AppColors.onSurfaceVariant,
@@ -473,9 +484,9 @@ class _MusicScreenState extends State<MusicScreen>
                                 ],
                               ),
                               child: IconButton(
-                                onPressed: () => _event.togglePlay(),
+                                onPressed: _event.togglePlay,
                                 icon: Icon(
-                                  _controller.isPlaying ? Icons.pause : Icons.play_arrow,
+                                  _playback.isPlaying ? Icons.pause : Icons.play_arrow,
                                   size: 40,
                                   color: AppColors.onPrimary,
                                 ),

@@ -291,7 +291,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+                            // Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
                           ],
                         ),
                       ),
@@ -396,32 +396,32 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.outlineVariant),
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.settings,
-                                color: AppColors.onSurfaceVariant,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '高级连接设置',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      // Container(
+                      //   height: 56,
+                      //   decoration: BoxDecoration(
+                      //     border: Border.all(color: AppColors.outlineVariant),
+                      //     borderRadius: BorderRadius.circular(28),
+                      //   ),
+                      //   child: Center(
+                      //     child: Row(
+                      //       mainAxisSize: MainAxisSize.min,
+                      //       children: [
+                      //         Icon(
+                      //           Icons.settings,
+                      //           color: AppColors.onSurfaceVariant,
+                      //           size: 18,
+                      //         ),
+                      //         const SizedBox(width: 8),
+                      //         Text(
+                      //           '高级连接设置',
+                      //           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      //             color: AppColors.onSurfaceVariant,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ),
                       const SizedBox(height: 120),
                     ],
                   ),
