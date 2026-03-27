@@ -5,7 +5,7 @@ class MusicEvent {
 
   final MusicController _controller;
 
-  void togglePlay() => _controller.togglePlay();
+  Future<void> togglePlay() => _controller.togglePlay();
   void toggleSync() => _controller.toggleSync();
   void setProgress(double value) => _controller.setProgress(value);
   void seekToStart() => _controller.seekToStart();

@@ -27,8 +27,27 @@ class _MusicTabScreenState extends State<MusicTabScreen> {
     _musicEvent = MusicEvent(_playback);
   }
 
-  /// 列表项已调用 [MusicListController.selectTrack]，此处只加载音频并展开播放层。
-  Future<void> _onTrackTap(MusicTrack track) async {
+  bool _sameLoadedTrack(MusicTrack track) =>
+      _playback.currentTrack?.id == track.id;
+
+  /// 左侧封面：当前行正在播 → 暂停/继续；其他行 → 切歌并播放。
+  Future<void> _onCoverTap(MusicTrack track, int index) async {
+    _listController.selectTrack(index);
+    if (_sameLoadedTrack(track)) {
+      await _musicEvent.togglePlay();
+      return;
+    }
+    await _playback.switchTrack(track);
+    if (mounted) setState(() => _showPlayer = true);
+  }
+
+  /// 标题/右侧区域：同一首已加载则只打开详情（不重新 setUrl）；否则切歌并打开。
+  Future<void> _onRowOpenDetail(MusicTrack track, int index) async {
+    _listController.selectTrack(index);
+    if (_sameLoadedTrack(track)) {
+      if (mounted) setState(() => _showPlayer = true);
+      return;
+    }
     await _playback.switchTrack(track);
     if (mounted) setState(() => _showPlayer = true);
   }
@@ -48,7 +67,9 @@ class _MusicTabScreenState extends State<MusicTabScreen> {
       children: [
         MusicListScreen(
           controller: _listController,
-          onTrackTap: _onTrackTap,
+          playback: _playback,
+          onCoverTap: _onCoverTap,
+          onRowOpenDetail: _onRowOpenDetail,
         ),
         MusicScreen(
           listController: _listController,

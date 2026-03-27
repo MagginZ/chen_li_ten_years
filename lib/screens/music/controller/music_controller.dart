@@ -77,7 +77,13 @@ class MusicController extends ChangeNotifier {
     await _loadTrack(_currentTrack);
   }
 
+  /// 与 [track] 为同一首且已加载完成时不再 `setUrl`，避免进入详情或重复点选时从头播放。
   Future<void> switchTrack(MusicTrack track) async {
+    if (_currentTrack?.id == track.id) {
+      _currentTrack = track;
+      notifyListeners();
+      return;
+    }
     _currentTrack = track;
     await _loadTrack(track);
   }

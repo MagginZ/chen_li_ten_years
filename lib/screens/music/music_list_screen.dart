@@ -1,18 +1,26 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
+import 'controller/music_controller.dart';
 import 'controller/music_list_controller.dart';
 import 'event/music_list_event.dart';
+
 /// 歌单列表页：搜索、分页、播放
 class MusicListScreen extends StatefulWidget {
   const MusicListScreen({
     super.key,
     required this.controller,
-    required this.onTrackTap,
+    required this.playback,
+    required this.onCoverTap,
+    required this.onRowOpenDetail,
   });
 
   final MusicListController controller;
-  final void Function(MusicTrack track) onTrackTap;
+  final MusicController playback;
+  final Future<void> Function(MusicTrack track, int index) onCoverTap;
+  final Future<void> Function(MusicTrack track, int index) onRowOpenDetail;
 
   @override
   State<MusicListScreen> createState() => _MusicListScreenState();
@@ -31,7 +39,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.controller,
+      listenable: Listenable.merge([widget.controller, widget.playback]),
       builder: (context, _) {
         final tracks = widget.controller.displayTracks;
         if (tracks.isEmpty) {
@@ -142,9 +150,12 @@ class _MusicListScreenState extends State<MusicListScreen> {
                         return _TrackListItem(
                           track: track,
                           isNowPlaying: isNowPlaying,
-                          onTap: () {
-                            _event.selectTrack(i);
-                            widget.onTrackTap(track);
+                          isPlaying: widget.playback.isPlaying && isNowPlaying,
+                          onCoverTap: () {
+                            widget.onCoverTap(track, i);
+                          },
+                          onRowTap: () {
+                            widget.onRowOpenDetail(track, i);
                           },
                         );
                       },
@@ -495,12 +506,17 @@ class _TrackListItem extends StatelessWidget {
   const _TrackListItem({
     required this.track,
     required this.isNowPlaying,
-    required this.onTap,
+    required this.isPlaying,
+    required this.onCoverTap,
+    required this.onRowTap,
   });
 
   final MusicTrack track;
   final bool isNowPlaying;
-  final VoidCallback onTap;
+  /// 当前行是否为列表选中项且播放器正在播放（用于封面与均衡器动效）
+  final bool isPlaying;
+  final VoidCallback onCoverTap;
+  final VoidCallback onRowTap;
 
   @override
   Widget build(BuildContext context) {
@@ -509,32 +525,31 @@ class _TrackListItem extends StatelessWidget {
           ? AppColors.surfaceContainerHigh
           : AppColors.surfaceContainerLow,
       borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: isNowPlaying
-                ? Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                    width: 1,
-                  )
-                : null,
-            boxShadow: isNowPlaying
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              // 封面
-              ClipRRect(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: isNowPlaying
+              ? Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                  width: 1,
+                )
+              : null,
+          boxShadow: isNowPlaying
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.22),
+                    blurRadius: 16,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: onCoverTap,
+              behavior: HitTestBehavior.opaque,
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: SizedBox(
                   width: 56,
@@ -548,7 +563,7 @@ class _TrackListItem extends StatelessWidget {
                           color: AppColors.black.withValues(alpha: 0.4),
                           child: Center(
                             child: Icon(
-                              Icons.pause,
+                              isPlaying ? Icons.pause : Icons.play_arrow,
                               color: AppColors.primary,
                               size: 28,
                             ),
@@ -558,102 +573,166 @@ class _TrackListItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              // 标题
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      track.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight:
-                            isNowPlaying ? FontWeight.bold : FontWeight.w500,
-                        color: isNowPlaying
-                            ? AppColors.primary
-                            : AppColors.onSurface,
-                        letterSpacing: 0.5,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onRowTap,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                track.title,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: isNowPlaying
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isNowPlaying
+                                          ? AppColors.primary
+                                          : AppColors.onSurface,
+                                      letterSpacing: 0.5,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                track.artist,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isNowPlaying)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _EqualizerBars(active: isPlaying),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.more_vert,
+                                color: AppColors.onSurfaceVariant,
+                                size: 24,
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.play_arrow,
+                                color: AppColors.onSurfaceVariant,
+                                size: 28,
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.more_vert,
+                                color: AppColors.onSurfaceVariant,
+                                size: 24,
+                              ),
+                            ],
+                          ),
+                      ],
                     ),
-                    Text(
-                      track.artist,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              // 右侧图标
-              if (isNowPlaying)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildWaveform(context),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.more_vert,
-                      color: AppColors.onSurfaceVariant,
-                      size: 24,
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.play_arrow,
-                      color: AppColors.onSurfaceVariant,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.more_vert,
-                      color: AppColors.onSurfaceVariant,
-                      size: 24,
-                    ),
-                  ],
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildWaveform(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 16,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _WaveBar(height: 8),
-          _WaveBar(height: 12),
-          _WaveBar(height: 6),
-        ],
       ),
     );
   }
 }
 
-class _WaveBar extends StatelessWidget {
-  const _WaveBar({required this.height});
+/// 播放中时的简易均衡器条动画（暂停时为静态低条）
+class _EqualizerBars extends StatefulWidget {
+  const _EqualizerBars({required this.active});
 
-  final double height;
+  final bool active;
+
+  @override
+  State<_EqualizerBars> createState() => _EqualizerBarsState();
+}
+
+class _EqualizerBarsState extends State<_EqualizerBars>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    if (widget.active) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_EqualizerBars oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !oldWidget.active) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.active && oldWidget.active) {
+      _controller.stop();
+      _controller.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    return SizedBox(
+      width: 28,
+      height: 18,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final t = widget.active ? _controller.value : 0.0;
+          double barH(int phaseSteps) {
+            final wave = 0.5 + 0.5 * math.sin(t * math.pi * 2 + phaseSteps * 0.9);
+            return (4 + 12 * wave).clamp(4.0, 16.0);
+          }
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _eqBar(barH(0)),
+              _eqBar(barH(2)),
+              _eqBar(barH(4)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _eqBar(double h) {
     return Container(
       width: 4,
-      height: height,
+      height: h,
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(2),
