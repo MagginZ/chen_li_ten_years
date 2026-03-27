@@ -5,18 +5,39 @@ import '../../ble/ble_controller.dart';
 import 'controller/details_controller.dart';
 import 'event/details_event.dart';
 
-class DetailsScreen extends StatelessWidget {
+class DetailsScreen extends StatefulWidget {
   const DetailsScreen({super.key});
 
   @override
+  State<DetailsScreen> createState() => _DetailsScreenState();
+}
+
+class _DetailsScreenState extends State<DetailsScreen> {
+  late final DetailsController _controller;
+  late final DetailsEvent _event;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = DetailsController();
+    _event = DetailsEvent(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = DetailsController();
-    final event = DetailsEvent(controller);
     final ble = BleController.instance;
 
     return ListenableBuilder(
-      listenable: Listenable.merge([controller, ble]),
+      listenable: Listenable.merge([_controller, ble]),
       builder: (context, _) {
+        final controller = _controller;
+        final event = _event;
         final connectedDevice = ble.connectedDevice;
         final deviceName = connectedDevice?.platformName.isNotEmpty == true
             ? connectedDevice!.platformName
@@ -32,18 +53,20 @@ class DetailsScreen extends StatelessWidget {
               Positioned(
                 top: 120,
                 left: MediaQuery.of(context).size.width * 0.5 - 150,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.1),
-                        blurRadius: 100,
-                        spreadRadius: 50,
-                      ),
-                    ],
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.1),
+                          blurRadius: 100,
+                          spreadRadius: 50,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -15,6 +15,7 @@ class GlassContainer extends StatelessWidget {
   final Color? backgroundColor;
   final List<BoxShadow>? boxShadow;
   final Border? border;
+  final bool enableBlur;
 
   const GlassContainer({
     super.key,
@@ -28,42 +29,50 @@ class GlassContainer extends StatelessWidget {
     this.backgroundColor,
     this.boxShadow,
     this.border,
+    this.enableBlur = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final radius = borderRadius ?? BorderRadius.circular(16);
+    final content = Container(
+      width: width,
+      height: height,
+      margin: margin,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: backgroundColor ?? AppColors.glassSurface.withValues(alpha: 0.9),
+        borderRadius: radius,
+        border: border ?? Border(
+          top: BorderSide(
+            color: AppColors.white.withValues(alpha: 0.04),
+            width: 0.5,
+          ),
+          left: BorderSide(
+            color: AppColors.white.withValues(alpha: 0.04),
+            width: 0.5,
+          ),
+        ),
+        boxShadow: boxShadow ?? [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
+
+    if (!enableBlur) {
+      return content;
+    }
+
     return ClipRRect(
-      borderRadius: borderRadius ?? BorderRadius.circular(16),
+      borderRadius: radius,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          width: width,
-          height: height,
-          margin: margin,
-          padding: padding,
-          decoration: BoxDecoration(
-            color: backgroundColor ?? AppColors.glassSurface,
-            borderRadius: borderRadius ?? BorderRadius.circular(16),
-            border: border ?? Border(
-              top: BorderSide(
-                color: AppColors.white.withOpacity(0.05),
-                width: 0.5,
-              ),
-              left: BorderSide(
-                color: AppColors.white.withOpacity(0.05),
-                width: 0.5,
-              ),
-            ),
-            boxShadow: boxShadow ?? [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.3),
-                blurRadius: 40,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: child,
-        ),
+        child: content,
       ),
     );
   }
@@ -99,12 +108,12 @@ class GlowButton extends StatelessWidget {
         height: height,
         padding: padding,
         decoration: BoxDecoration(
-          gradient: gradient ?? AppColors.primaryGradient,
+          gradient: gradient,
           borderRadius: BorderRadius.circular(28),
           boxShadow: glowShadows ?? [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 20,
+              color: AppColors.primary.withValues(alpha: 0.22),
+              blurRadius: 12,
               spreadRadius: 0,
             ),
           ],
@@ -137,7 +146,7 @@ class NeonText extends StatelessWidget {
       style: (style ?? Theme.of(context).textTheme.headlineMedium)?.copyWith(
         shadows: [
           Shadow(
-            color: glowColor.withOpacity(glowIntensity),
+            color: glowColor.withValues(alpha: glowIntensity),
             blurRadius: 20,
           ),
         ],
@@ -177,7 +186,7 @@ class AmbientGlow extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(opacity),
+              color: color.withValues(alpha: opacity),
               blurRadius: blur,
               spreadRadius: size / 2,
             ),

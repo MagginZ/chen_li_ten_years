@@ -1,8 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
-import '../../ble/ble_controller.dart';
 import 'controller/music_list_controller.dart';
 import 'event/music_list_event.dart';
 /// 歌单列表页：搜索、分页、播放
@@ -33,7 +31,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([widget.controller, BleController.instance]),
+      listenable: widget.controller,
       builder: (context, _) {
         final tracks = widget.controller.displayTracks;
         if (tracks.isEmpty) {
@@ -47,6 +45,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
         final nowPlaying = widget.controller.nowPlayingIndex < tracks.length
             ? tracks[widget.controller.nowPlayingIndex]
             : null;
+        final nowPlayingIdx = widget.controller.nowPlayingIndex;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -55,79 +54,122 @@ class _MusicListScreenState extends State<MusicListScreen> {
               Positioned(
                 top: -80,
                 right: -80,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        blurRadius: 100,
-                        spreadRadius: 40,
-                      ),
-                    ],
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          blurRadius: 44,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               if (widget.controller.isLoading)
                 const Center(child: CircularProgressIndicator(color: AppColors.primary)),
               SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _SearchBar(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: CustomScrollView(
+                    slivers: [
+                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                    SliverToBoxAdapter(
+                      child: _SearchBar(
                         initialKeyword: widget.controller.searchKeyword,
                         onSearch: (kw) => widget.controller.search(kw),
                         isLoading: widget.controller.isLoading,
                       ),
-                      const SizedBox(height: 16),
-                      _PlaylistHeader(
-                        controller: widget.controller,
-                        event: _event,
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _PlaylistHeader(
+                          controller: widget.controller,
+                          event: _event,
+                        ),
                       ),
-                      if (widget.controller.error != null) ...[
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.errorContainer.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.warning_amber, color: AppColors.error),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  '歌单加载失败，使用默认列表',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.onErrorContainer,
+                    ),
+                    if (widget.controller.error != null) ...[
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.errorContainer.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning_amber, color: AppColors.error),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '歌单加载失败，使用默认列表',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.onErrorContainer,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              TextButton(
-                                onPressed: () => widget.controller.retry(),
-                                child: const Text('重试'),
-                              ),
-                            ],
+                                TextButton(
+                                  onPressed: () => widget.controller.retry(),
+                                  child: const Text('重试'),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 32),
-                      if (nowPlaying != null)
-                        _NowPlayingBento(track: nowPlaying),
-                      const SizedBox(height: 24),
-                      _TrackListSection(
-                        controller: widget.controller,
-                        event: _event,
-                        onTrackTap: widget.onTrackTap,
-                        onLoadMore: () => widget.controller.loadMore(),
                       ),
                     ],
+                    const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                    if (nowPlaying != null)
+                      SliverToBoxAdapter(
+                        child: _NowPlayingBento(track: nowPlaying),
+                      ),
+                    if (nowPlaying != null) const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                    SliverList.separated(
+                      itemCount: tracks.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final track = tracks[i];
+                        final isNowPlaying = i == nowPlayingIdx;
+                        return _TrackListItem(
+                          track: track,
+                          isNowPlaying: isNowPlaying,
+                          onTap: () {
+                            _event.selectTrack(i);
+                            widget.onTrackTap(track);
+                          },
+                        );
+                      },
+                    ),
+                    if (widget.controller.hasMore)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12, bottom: 24),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: widget.controller.isLoadingMore ? null : () => widget.controller.loadMore(),
+                              child: widget.controller.isLoadingMore
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Text('加载更多'),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                  ],
                   ),
                 ),
               ),
@@ -445,64 +487,6 @@ class GradientDecoration extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TrackListSection extends StatelessWidget {
-  const _TrackListSection({
-    required this.controller,
-    required this.event,
-    required this.onTrackTap,
-    required this.onLoadMore,
-  });
-
-  final MusicListController controller;
-  final MusicListEvent event;
-  final void Function(MusicTrack track) onTrackTap;
-  final VoidCallback onLoadMore;
-
-  @override
-  Widget build(BuildContext context) {
-    final tracks = controller.displayTracks;
-    final nowPlayingIdx = controller.nowPlayingIndex;
-
-    return Column(
-      children: [
-        ...List.generate(tracks.length, (i) {
-        final track = tracks[i];
-        final isNowPlaying = i == nowPlayingIdx;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _TrackListItem(
-            track: track,
-            isNowPlaying: isNowPlaying,
-            onTap: () {
-              event.selectTrack(i);
-              onTrackTap(track);
-            },
-          ),
-        );
-      }),
-        if (controller.hasMore)
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 24),
-            child: SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: controller.isLoadingMore ? null : onLoadMore,
-                child: controller.isLoadingMore
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('加载更多'),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

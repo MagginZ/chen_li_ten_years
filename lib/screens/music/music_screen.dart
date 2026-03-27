@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
@@ -7,7 +6,6 @@ import 'controller/music_controller.dart';
 import 'controller/music_list_controller.dart';
 import 'event/music_event.dart';
 
-/// 发光滑块形状：primary 色 20px 外发光
 class _GlowThumbShape extends RoundSliderThumbShape {
   const _GlowThumbShape();
 
@@ -28,17 +26,14 @@ class _GlowThumbShape extends RoundSliderThumbShape {
   }) {
     final canvas = context.canvas;
 
-    // 20px 外发光 (Ambient Shadow)
     final glowPaint = Paint()
-      ..color = AppColors.musicPrimary.withValues(alpha: 0.6)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
-    canvas.drawCircle(center, 20, glowPaint);
+      ..color = AppColors.musicPrimary.withValues(alpha: 0.45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+    canvas.drawCircle(center, 16, glowPaint);
 
-    // 滑块本体
     final fillPaint = Paint()..color = AppColors.musicPrimary;
     canvas.drawCircle(center, enabledThumbRadius, fillPaint);
 
-    // 高光边缘
     final outlinePaint = Paint()
       ..color = AppColors.musicPrimary.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
@@ -78,6 +73,7 @@ class _CoverImage extends StatelessWidget {
     return Image.network(
       url!,
       fit: BoxFit.cover,
+      filterQuality: FilterQuality.low,
       errorBuilder: (_, __, ___) => Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -136,6 +132,7 @@ class _MusicScreenState extends State<MusicScreen>
   late final AnimationController _coverAnimController;
   late final Animation<double> _coverScale;
   late int _currentIndex;
+  bool _coverAnimPlaying = false;
 
   @override
   void initState() {
@@ -162,6 +159,9 @@ class _MusicScreenState extends State<MusicScreen>
   }
 
   void _updateCoverAnimation() {
+    if (_coverAnimPlaying == _controller.isPlaying) return;
+    _coverAnimPlaying = _controller.isPlaying;
+
     if (_controller.isPlaying) {
       _coverAnimController.repeat(reverse: true);
     } else {
@@ -206,38 +206,37 @@ class _MusicScreenState extends State<MusicScreen>
           backgroundColor: AppColors.musicBackground,
           body: Stack(
             children: [
-              // 装饰光晕
               Positioned(
-                top: -100,
-                left: -100,
+                top: -60,
+                left: -60,
                 child: Container(
-                  width: 400,
-                  height: 400,
+                  width: 220,
+                  height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.musicPrimary.withValues(alpha: 0.15),
-                        blurRadius: 120,
-                        spreadRadius: 50,
+                        color: AppColors.musicPrimary.withValues(alpha: 0.08),
+                        blurRadius: 48,
+                        spreadRadius: 12,
                       ),
                     ],
                   ),
                 ),
               ),
               Positioned(
-                bottom: -100,
-                right: -100,
+                bottom: -60,
+                right: -60,
                 child: Container(
-                  width: 400,
-                  height: 400,
+                  width: 220,
+                  height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.tertiary.withValues(alpha: 0.08),
-                        blurRadius: 120,
-                        spreadRadius: 50,
+                        color: AppColors.tertiary.withValues(alpha: 0.05),
+                        blurRadius: 44,
+                        spreadRadius: 10,
                       ),
                     ],
                   ),
@@ -260,38 +259,38 @@ class _MusicScreenState extends State<MusicScreen>
                           ),
                         ),
                       const SizedBox(height: 16),
-                      // 动态封面：播放时缓慢缩放，暂停时停止
-                      AnimatedBuilder(
-                        animation: _coverScale,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _coverScale.value,
-                            child: child,
-                          );
-                        },
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.black.withValues(alpha: 0.5),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: _CoverImage(url: _controller.currentTrack?.coverUrl),
+                      RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: _coverScale,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _coverScale.value,
+                              child: child,
+                            );
+                          },
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.black.withValues(alpha: 0.28),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: _CoverImage(url: _controller.currentTrack?.coverUrl),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
-                      // 歌曲名
+                      const SizedBox(height: 32),
                       Text(
                         _controller.trackTitle,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -301,7 +300,6 @@ class _MusicScreenState extends State<MusicScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // 歌手名
                       Text(
                         _controller.artist,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -309,8 +307,7 @@ class _MusicScreenState extends State<MusicScreen>
                           color: AppColors.secondaryFixed,
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      // SYNC LIGHT 开关区域
+                      const SizedBox(height: 24),
                       GlassContainer(
                         padding: const EdgeInsets.all(20),
                         child: Row(
@@ -372,8 +369,8 @@ class _MusicScreenState extends State<MusicScreen>
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.black.withValues(alpha: 0.2),
-                                            blurRadius: 4,
+                                            color: AppColors.black.withValues(alpha: 0.14),
+                                            blurRadius: 3,
                                           ),
                                         ],
                                       ),
@@ -385,8 +382,7 @@ class _MusicScreenState extends State<MusicScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 40),
-                      // 进度条区域：surface-container-low，禁止边框
+                      const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                         decoration: BoxDecoration(
@@ -432,70 +428,70 @@ class _MusicScreenState extends State<MusicScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // 玻璃拟态控制栏：surface-variant 60% + BackdropFilter 20px
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceVariant.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(24),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withValues(alpha: 0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: _onPrev,
-                                  icon: const Icon(Icons.skip_previous),
-                                  iconSize: 40,
-                                  color: AppColors.onSurface,
-                                ),
-                                const SizedBox(width: 16),
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.musicPrimary,
-                                        AppColors.musicPrimary.withValues(alpha: 0.7),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.musicPrimary.withValues(alpha: 0.5),
-                                        blurRadius: 24,
-                                      ),
-                                    ],
-                                  ),
-                                  child: IconButton(
-                                    onPressed: () => _event.togglePlay(),
-                                    icon: Icon(
-                                      _controller.isPlaying ? Icons.pause : Icons.play_arrow,
-                                      size: 40,
-                                      color: AppColors.onPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                IconButton(
-                                  onPressed: _onNext,
-                                  icon: const Icon(Icons.skip_next),
-                                  iconSize: 40,
-                                  color: AppColors.onSurface,
-                                ),
-                              ],
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              onPressed: _onPrev,
+                              icon: const Icon(Icons.skip_previous),
+                              iconSize: 40,
+                              color: AppColors.onSurface,
                             ),
-                          ),
+                            const SizedBox(width: 16),
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.musicPrimary,
+                                    AppColors.musicPrimary.withValues(alpha: 0.8),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.musicPrimary.withValues(alpha: 0.24),
+                                    blurRadius: 12,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                onPressed: () => _event.togglePlay(),
+                                icon: Icon(
+                                  _controller.isPlaying ? Icons.pause : Icons.play_arrow,
+                                  size: 40,
+                                  color: AppColors.onPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            IconButton(
+                              onPressed: _onNext,
+                              icon: const Icon(Icons.skip_next),
+                              iconSize: 40,
+                              color: AppColors.onSurface,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 28),
                       Row(
                         children: [
                           Expanded(

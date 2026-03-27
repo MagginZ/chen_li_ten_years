@@ -37,6 +37,20 @@ class MusicTrack {
 class MusicListController extends ChangeNotifier {
   static const int pageSize = 20;
 
+  MusicListController() {
+    BleController.instance.addListener(_onBleChanged);
+  }
+
+  void _onBleChanged() {
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    BleController.instance.removeListener(_onBleChanged);
+    super.dispose();
+  }
+
   List<MusicTrack> _tracks = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;

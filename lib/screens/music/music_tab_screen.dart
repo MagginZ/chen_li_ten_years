@@ -35,6 +35,12 @@ class _MusicTabScreenState extends State<MusicTabScreen> {
   }
 
   @override
+  void dispose() {
+    _listController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_showPlayer) {
       return MusicScreen(

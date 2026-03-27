@@ -1,9 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// Custom bottom navigation bar for 果实 app
-/// Features glassmorphism effect and active item highlighting
+/// 底部导航（避免 BackdropFilter 与滚动内容每帧合成）
 class NeonBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -19,16 +17,16 @@ class NeonBottomNavBar extends StatelessWidget {
     return Container(
       height: 96,
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerHigh.withOpacity(0.4),
+        color: AppColors.surfaceContainerHigh.withOpacity(0.94),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(40),
           topRight: Radius.circular(40),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.5),
-            blurRadius: 40,
-            offset: const Offset(0, -10),
+            color: AppColors.black.withOpacity(0.22),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -37,17 +35,14 @@ class NeonBottomNavBar extends StatelessWidget {
           topLeft: Radius.circular(40),
           topRight: Radius.circular(40),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.bluetooth_searching, 'Scan', 0),
-              _buildNavItem(Icons.fluorescent, 'Connect', 1),
-              _buildNavItem(Icons.music_note, 'Music', 2),
-              _buildNavItem(Icons.palette, 'Light', 3),
-            ],
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.bluetooth_searching, 'Scan', 0),
+            _buildNavItem(Icons.fluorescent, 'Connect', 1),
+            _buildNavItem(Icons.music_note, 'Music', 2),
+            _buildNavItem(Icons.palette, 'Light', 3),
+          ],
         ),
       ),
     );

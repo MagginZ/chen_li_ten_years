@@ -67,47 +67,51 @@ class _LightScreenState extends State<LightScreen> {
               Positioned(
                 top: -50,
                 right: -50,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.05),
-                        blurRadius: 120,
-                        spreadRadius: 50,
-                      ),
-                    ],
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.05),
+                          blurRadius: 64,
+                          spreadRadius: 28,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               Positioned(
                 bottom: -50,
                 left: -50,
-                child: Container(
-                  width: 250,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondary.withOpacity(0.05),
-                        blurRadius: 100,
-                        spreadRadius: 40,
-                      ),
-                    ],
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 250,
+                    height: 250,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondary.withOpacity(0.05),
+                          blurRadius: 56,
+                          spreadRadius: 28,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               SafeArea(
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 24),
-                      RichText(
+                  child: CustomScrollView(
+                    slivers: [
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                    SliverToBoxAdapter(
+                      child: RichText(
                         text: TextSpan(
                           children: [
                             TextSpan(
@@ -129,17 +133,24 @@ class _LightScreenState extends State<LightScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'SYNCED TO LIVE STAGE EFFECTS',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                          letterSpacing: 1.5,
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'SYNCED TO LIVE STAGE EFFECTS',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 40),
-                      Center(
-                        child: SizedBox(
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                    SliverToBoxAdapter(
+                      child: RepaintBoundary(
+                        child: Center(
+                          child: SizedBox(
                           width: _wheelSize,
                           height: _wheelSize,
                           child: GestureDetector(
@@ -172,8 +183,8 @@ class _LightScreenState extends State<LightScreen> {
                                     boxShadow: [
                                       BoxShadow(
                                         color: AppColors.primary.withOpacity(0.1),
-                                        blurRadius: 80,
-                                        spreadRadius: 40,
+                                        blurRadius: 48,
+                                        spreadRadius: 24,
                                       ),
                                     ],
                                   ),
@@ -268,8 +279,11 @@ class _LightScreenState extends State<LightScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
-                      GlassContainer(
+                    ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                    SliverToBoxAdapter(
+                      child: GlassContainer(
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           children: [
@@ -333,8 +347,10 @@ class _LightScreenState extends State<LightScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      Text(
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                    SliverToBoxAdapter(
+                      child: Text(
                         'ATMOSPHERE MODES',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
@@ -342,18 +358,17 @@ class _LightScreenState extends State<LightScreen> {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 3,
-                        ),
-                        itemCount: LightController.modes.length,
-                        itemBuilder: (context, index) {
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 3,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
                           final mode = LightController.modes[index];
                           final isSelected = _controller.selectedMode == mode['name'];
                           return GestureDetector(
@@ -395,9 +410,12 @@ class _LightScreenState extends State<LightScreen> {
                             ),
                           );
                         },
+                        childCount: LightController.modes.length,
                       ),
-                      const SizedBox(height: 32),
-                      Text(
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                    SliverToBoxAdapter(
+                      child: Text(
                         'FANDOM PRESETS',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
@@ -405,61 +423,66 @@ class _LightScreenState extends State<LightScreen> {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            ...List.generate(LightController.presets.length, (index) {
-                              final isSelected = _controller.selectedPreset == index;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 16),
-                                child: GestureDetector(
-                                  onTap: () => _event.selectPreset(index),
-                                  child: Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: LightController.presets[index],
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: LightController.presets[index].withOpacity(0.4),
-                                          blurRadius: 20,
-                                        ),
-                                      ],
-                                      border: isSelected
-                                          ? Border.all(
-                                              color: AppColors.onSurface,
-                                              width: 3,
-                                            )
-                                          : null,
-                                    ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 56,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: LightController.presets.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == LightController.presets.length) {
+                              return Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.outlineVariant,
+                                    style: BorderStyle.solid,
+                                    width: 2,
                                   ),
                                 ),
+                                child: Icon(
+                                  Icons.add,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
                               );
-                            }),
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.outlineVariant,
-                                  style: BorderStyle.solid,
-                                  width: 2,
+                            }
+                            final isSelected = _controller.selectedPreset == index;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: GestureDetector(
+                                onTap: () => _event.selectPreset(index),
+                                child: Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: LightController.presets[index],
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: LightController.presets[index].withOpacity(0.4),
+                                        blurRadius: 12,
+                                      ),
+                                    ],
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: AppColors.onSurface,
+                                            width: 3,
+                                          )
+                                        : null,
+                                  ),
                                 ),
                               ),
-                              child: Icon(
-                                Icons.add,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(height: 120),
-                    ],
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                  ],
                   ),
                 ),
               ),

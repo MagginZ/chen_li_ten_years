@@ -38,167 +38,193 @@ class _ScanScreenState extends State<ScanScreen> {
           backgroundColor: AppColors.background,
           body: Stack(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.surface,
-                      AppColors.surfaceContainerLowest,
-                      AppColors.surface,
-                    ],
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      _buildRadarRing(300),
-                      _buildRadarRing(500),
-                      _buildRadarRing(700),
-                      _buildRadarRing(900),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: MediaQuery.of(context).size.height * 0.3,
-                left: MediaQuery.of(context).size.width * 0.5 - 100,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.05),
-                        blurRadius: 100,
-                        spreadRadius: 50,
+              RepaintBoundary(
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.surface,
+                            AppColors.surfaceContainerLowest,
+                            AppColors.surface,
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    Positioned.fill(
+                      child: Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _buildRadarRing(300),
+                            _buildRadarRing(500),
+                            _buildRadarRing(700),
+                            _buildRadarRing(900),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: MediaQuery.of(context).size.height * 0.3,
+                      left: MediaQuery.of(context).size.width * 0.5 - 100,
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.05),
+                              blurRadius: 100,
+                              spreadRadius: 50,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SafeArea(
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 80),
-                      Text(
+                  child: CustomScrollView(
+                    slivers: [
+                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                    SliverToBoxAdapter(
+                      child: Text(
                         _controller.isScanning ? 'SCANNING...' : 'DEVICES FOUND',
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.02,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.secondary.withOpacity(0.5),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _controller.isScanning
-                                ? 'Searching for nearby controllers'
-                                : '${_controller.devices.length} devices available',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 48),
-                      ..._controller.devices.asMap().entries.map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildDeviceCard(
-                            context,
-                            e.value.name,
-                            e.value.id,
-                            e.value.signal,
-                            e.value.signalColor,
-                            e.value.isPrimary,
-                            () => _event.connectDevice(e.key),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: AppColors.outlineVariant.withOpacity(0.2),
-                            style: BorderStyle.solid,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.info_outline, color: AppColors.onSurfaceVariant),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Don't see your device? Make sure it's in",
-                              style: Theme.of(context).textTheme.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            Text(
-                              'Pairing Mode',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.secondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      IgnorePointer(
-                        ignoring: _controller.isScanning,
-                        child: Opacity(
-                          opacity: _controller.isScanning ? 0.5 : 1,
-                          child: GlowButton(
-                            onPressed: () => _event.rescan(),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.sync,
-                              color: AppColors.onPrimaryFixed,
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.secondary.withOpacity(0.5),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'RE-SCAN DEVICES',
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                color: AppColors.onPrimaryFixed,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
+                              _controller.isScanning
+                                  ? 'Searching for nearby controllers'
+                                  : '${_controller.devices.length} devices available',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 48)),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final d = _controller.devices[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildDeviceCard(
+                              context,
+                              d.name,
+                              d.id,
+                              d.signal,
+                              d.signalColor,
+                              d.isPrimary,
+                              () => _event.connectDevice(index),
+                            ),
+                          );
+                        },
+                        childCount: _controller.devices.length,
                       ),
-                      const SizedBox(height: 120),
-                    ],
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: AppColors.outlineVariant.withOpacity(0.2),
+                              style: BorderStyle.solid,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.info_outline, color: AppColors.onSurfaceVariant),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Don't see your device? Make sure it's in",
+                                style: Theme.of(context).textTheme.bodySmall,
+                                textAlign: TextAlign.center,
+                              ),
+                              Text(
+                                'Pairing Mode',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 32),
+                        child: IgnorePointer(
+                          ignoring: _controller.isScanning,
+                          child: Opacity(
+                            opacity: _controller.isScanning ? 0.5 : 1,
+                            child: GlowButton(
+                              onPressed: () => _event.rescan(),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.sync,
+                                    color: AppColors.onPrimaryFixed,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'RE-SCAN DEVICES',
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: AppColors.onPrimaryFixed,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                  ],
                   ),
                 ),
               ),
