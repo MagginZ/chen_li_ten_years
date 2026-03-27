@@ -27,6 +27,9 @@ class MusicController extends ChangeNotifier {
   StreamSubscription? _stateSub;
   final Set<int> _triggeredSeconds = {};
 
+  /// 防止连续切歌时，先发出的 `setUrl` 后完成、覆盖后选曲目。
+  int _loadGeneration = 0;
+
   bool _isPlaying = false;
   double _progress = 0.0;
   Duration _position = Duration.zero;
@@ -79,29 +82,53 @@ class MusicController extends ChangeNotifier {
     await _loadTrack(track);
   }
 
+  bool _isStaleLoad(int gen) => gen != _loadGeneration;
+
   Future<void> _loadTrack(MusicTrack? track) async {
+    final gen = ++_loadGeneration;
+
+    try {
+      await _player.stop();
+    } catch (_) {}
+
+    if (_isStaleLoad(gen)) return;
+
     final streamUrl = track?.streamUrl;
     if (_isPlayableUrl(streamUrl)) {
       try {
         await _player.setUrl(streamUrl!);
+        if (_isStaleLoad(gen)) return;
         debugPrint('[MusicController] Playing from NCM: $streamUrl');
         await _player.play();
+        if (_isStaleLoad(gen)) return;
         _isPlaying = true;
         notifyListeners();
         return;
       } catch (e) {
         debugPrint('[MusicController] setUrl failed, fallback: $e');
+        if (_isStaleLoad(gen)) return;
       }
     }
     try {
       await _player.setAsset('assets/audio/mock_music.mp3');
+      if (_isStaleLoad(gen)) return;
       debugPrint('[MusicController] Using fallback asset');
+      await _player.play();
+      if (_isStaleLoad(gen)) return;
+      _isPlaying = true;
+      notifyListeners();
     } catch (e) {
       debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
+      if (_isStaleLoad(gen)) return;
       try {
         await _player.setUrl(
           'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
         );
+        if (_isStaleLoad(gen)) return;
+        await _player.play();
+        if (_isStaleLoad(gen)) return;
+        _isPlaying = true;
+        notifyListeners();
       } catch (e2) {
         debugPrint('[MusicController] setUrl failed: $e2');
       }
