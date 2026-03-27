@@ -115,14 +115,14 @@ class _LightScreenState extends State<LightScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Light ',
+                              text: '灯光 ',
                               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.02,
                               ),
                             ),
                             TextSpan(
-                              text: 'Aura',
+                              text: '光晕',
                               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.02,
@@ -138,7 +138,7 @@ class _LightScreenState extends State<LightScreen> {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          'SYNCED TO LIVE STAGE EFFECTS',
+                          '与现场舞台灯效同步',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: AppColors.onSurfaceVariant,
                             letterSpacing: 1.5,
@@ -260,7 +260,7 @@ class _LightScreenState extends State<LightScreen> {
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                'Hue Control',
+                                                '色相拾取',
                                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                                   color: AppColors.onSurface.withOpacity(0.4),
                                                   fontWeight: FontWeight.bold,
@@ -291,7 +291,7 @@ class _LightScreenState extends State<LightScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'INTENSITY',
+                                  '亮度',
                                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: AppColors.onSurfaceVariant,
                                     fontWeight: FontWeight.bold,
@@ -351,7 +351,7 @@ class _LightScreenState extends State<LightScreen> {
                     const SliverToBoxAdapter(child: SizedBox(height: 32)),
                     SliverToBoxAdapter(
                       child: Text(
-                        'ATMOSPHERE MODES',
+                        '氛围模式',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.bold,
@@ -416,7 +416,7 @@ class _LightScreenState extends State<LightScreen> {
                     const SliverToBoxAdapter(child: SizedBox(height: 32)),
                     SliverToBoxAdapter(
                       child: Text(
-                        'FANDOM PRESETS',
+                        '应援色预设',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.bold,

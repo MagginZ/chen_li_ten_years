@@ -33,8 +33,8 @@ class MusicController extends ChangeNotifier {
   Duration _duration = const Duration(seconds: 60);
 
   MusicTrack? get currentTrack => _currentTrack ?? initialTrack;
-  String get trackTitle => currentTrack?.title ?? 'Stitch Colors';
-  String get artist => currentTrack?.artist ?? 'Chen Li';
+  String get trackTitle => currentTrack?.title ?? '果实音乐';
+  String get artist => currentTrack?.artist ?? '陈粒';
 
   bool get isPlaying => _isPlaying;
   bool get syncEnabled => BleController.instance.autoSyncEnabled;

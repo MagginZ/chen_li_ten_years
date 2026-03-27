@@ -96,7 +96,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     const SliverToBoxAdapter(child: SizedBox(height: 80)),
                     SliverToBoxAdapter(
                       child: Text(
-                        _controller.isScanning ? 'SCANNING...' : 'DEVICES FOUND',
+                        _controller.isScanning ? '扫描中…' : '已发现设备',
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.02,
@@ -126,8 +126,8 @@ class _ScanScreenState extends State<ScanScreen> {
                             const SizedBox(width: 8),
                             Text(
                               _controller.isScanning
-                                  ? 'Searching for nearby controllers'
-                                  : '${_controller.devices.length} devices available',
+                                ? '正在搜索附近的设备'
+                                : '共 ${_controller.devices.length} 台设备可用',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppColors.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
@@ -175,12 +175,12 @@ class _ScanScreenState extends State<ScanScreen> {
                               Icon(Icons.info_outline, color: AppColors.onSurfaceVariant),
                               const SizedBox(height: 8),
                               Text(
-                                "Don't see your device? Make sure it's in",
+                                '找不到设备？请确认设备已进入',
                                 style: Theme.of(context).textTheme.bodySmall,
                                 textAlign: TextAlign.center,
                               ),
                               Text(
-                                'Pairing Mode',
+                                '配对模式',
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: AppColors.secondary,
                                   fontWeight: FontWeight.w600,
@@ -209,7 +209,7 @@ class _ScanScreenState extends State<ScanScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'RE-SCAN DEVICES',
+                                    '重新扫描设备',
                                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                       color: AppColors.onPrimaryFixed,
                                       fontWeight: FontWeight.bold,
@@ -325,7 +325,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'ID: $displayId',
+                      '标识：$displayId',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontFamily: 'monospace',
                       ),
@@ -347,7 +347,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     : null,
               ),
               child: Text(
-                'CONNECT',
+                '连接',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isPrimary ? AppColors.onPrimaryFixed : AppColors.onSurfaceVariant,
                   fontWeight: FontWeight.bold,

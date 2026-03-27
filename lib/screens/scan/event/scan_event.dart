@@ -24,10 +24,10 @@ class ScanEvent {
         for (final r in results) {
           final name = r.device.platformName.isNotEmpty
               ? r.device.platformName
-              : 'Lightstick ${r.device.remoteId.str.length >= 8 ? r.device.remoteId.str.substring(0, 8) : r.device.remoteId.str}';
+              : '荧光棒 ${r.device.remoteId.str.length >= 8 ? r.device.remoteId.str.substring(0, 8) : r.device.remoteId.str}';
           final id = r.device.remoteId.str;
           final rssi = r.rssi;
-          final signal = rssi > -60 ? 'Excellent' : (rssi > -75 ? 'Good' : 'Fair');
+          final signal = rssi > -60 ? '极佳' : (rssi > -75 ? '良好' : '一般');
           final signalColor = rssi > -60
               ? AppColors.secondary
               : (rssi > -75 ? AppColors.tertiary : AppColors.error);

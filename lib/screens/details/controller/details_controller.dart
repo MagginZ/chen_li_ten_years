@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class DetailsController extends ChangeNotifier {
   double _batteryLevel = 0.85;
-  String _signalStrength = 'Excellent';
+  String _signalStrength = '极佳';
   String _firmwareVersion = 'v3.2.0';
-  String _activeTheme = 'Cyberpunk Neon Pink';
+  String _activeTheme = '赛博霓虹粉';
 
   double get batteryLevel => _batteryLevel;
   String get signalStrength => _signalStrength;

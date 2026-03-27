@@ -201,7 +201,7 @@ class _PlaylistHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'PLAYLIST',
+                '歌单',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
@@ -221,7 +221,7 @@ class _PlaylistHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'SYNC LIGHT',
+                '灯光同步',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.secondary,
                   fontWeight: FontWeight.bold,
@@ -383,7 +383,7 @@ class _NowPlayingBento extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      'NOW PLAYING',
+                      '正在播放',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.onPrimaryContainer,
                         fontWeight: FontWeight.bold,

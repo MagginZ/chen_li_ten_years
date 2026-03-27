@@ -327,7 +327,7 @@ class _MusicScreenState extends State<MusicScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'SYNC LIGHT',
+                                    '灯光同步',
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                       color: AppColors.onSurface,
                                       fontWeight: FontWeight.bold,
@@ -337,8 +337,8 @@ class _MusicScreenState extends State<MusicScreen>
                                   const SizedBox(height: 2),
                                   Text(
                                     _controller.syncEnabled
-                                        ? 'Synchronizing with beat...'
-                                        : 'Sync disabled',
+                                        ? '随节拍同步中…'
+                                        : '已关闭同步',
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
@@ -506,7 +506,7 @@ class _MusicScreenState extends State<MusicScreen>
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'LS-409 Connected',
+                                    '设备已连接',
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                       fontWeight: FontWeight.bold,
@@ -530,7 +530,7 @@ class _MusicScreenState extends State<MusicScreen>
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Aura Mode',
+                                    '氛围模式',
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                       fontWeight: FontWeight.bold,

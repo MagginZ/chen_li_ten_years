@@ -3,16 +3,16 @@ import '../../../theme/app_colors.dart';
 
 class LightController extends ChangeNotifier {
   double _brightness = 0.84;
-  String _selectedMode = 'Standard';
+  String _selectedMode = '标准';
   int _selectedPreset = 0;
   Color _selectedColor = AppColors.primary;
   Offset _pickerOffset = const Offset(160, 160);
 
   static const List<Map<String, dynamic>> modes = [
-    {'name': 'Standard', 'icon': Icons.radio_button_checked},
-    {'name': 'Blink', 'icon': Icons.vibration},
-    {'name': 'Flash', 'icon': Icons.flash_on},
-    {'name': 'Breath', 'icon': Icons.air},
+    {'name': '标准', 'icon': Icons.radio_button_checked},
+    {'name': '闪烁', 'icon': Icons.vibration},
+    {'name': '爆闪', 'icon': Icons.flash_on},
+    {'name': '呼吸', 'icon': Icons.air},
   ];
 
   /// Fandom Presets: 粉、白、蓝、紫

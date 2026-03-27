@@ -41,9 +41,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
         final connectedDevice = ble.connectedDevice;
         final deviceName = connectedDevice?.platformName.isNotEmpty == true
             ? connectedDevice!.platformName
-            : 'LIGHTSTICK';
-        final deviceId = connectedDevice?.remoteId.str ?? 'Not connected';
-        final connectionLabel = ble.isConnected ? 'CONNECTED' : 'DISCONNECTED';
+            : '荧光棒';
+        final deviceId = connectedDevice?.remoteId.str ?? '无设备';
+        final connectionLabel = ble.isConnected ? '已连接' : '未连接';
         final connectionColor = ble.isConnected ? AppColors.secondary : AppColors.error;
 
         return Scaffold(
@@ -159,7 +159,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'ID: $deviceId',
+                        '标识：$deviceId',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -195,7 +195,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    'BATTERY LIFE',
+                                    '电量',
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                       fontWeight: FontWeight.bold,
@@ -218,7 +218,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          'Signal Strength',
+                                          '信号强度',
                                           style: Theme.of(context).textTheme.bodySmall,
                                         ),
                                       ),
@@ -241,7 +241,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          'Firmware',
+                                          '固件版本',
                                           style: Theme.of(context).textTheme.bodySmall,
                                         ),
                                       ),
@@ -278,7 +278,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Active Theme',
+                                    '当前主题',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -314,7 +314,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Auto-Sync',
+                                    '自动同步',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -322,8 +322,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     ble.autoSyncEnabled
-                                        ? 'Enabled during concert events'
-                                        : 'Disabled',
+                                        ? '演唱会期间启用'
+                                        : '已关闭',
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
@@ -383,7 +383,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 Icon(Icons.link_off, color: AppColors.onBackground),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'DISCONNECT',
+                                  '断开连接',
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: AppColors.onBackground,
                                     fontWeight: FontWeight.bold,
@@ -413,7 +413,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Advanced Connection Settings',
+                                '高级连接设置',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: AppColors.onSurfaceVariant,
                                 ),
