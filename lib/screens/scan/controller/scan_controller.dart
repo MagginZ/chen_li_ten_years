@@ -9,6 +9,8 @@ class ScanDevice {
   final String signal;
   final Color signalColor;
   final bool isPrimary;
+  /// 广播名或设备名包含 LEDnet（不区分大小写）
+  final bool isLednet;
 
   const ScanDevice({
     required this.device,
@@ -17,6 +19,7 @@ class ScanDevice {
     required this.signal,
     required this.signalColor,
     required this.isPrimary,
+    this.isLednet = false,
   });
 }
 
@@ -42,7 +45,11 @@ class ScanController extends ChangeNotifier {
   void addDevice(ScanDevice device) {
     if (_seenIds.contains(device.id)) return;
     _seenIds.add(device.id);
-    _devices.add(device);
+    if (device.isLednet) {
+      _devices.insert(0, device);
+    } else {
+      _devices.add(device);
+    }
     notifyListeners();
   }
 

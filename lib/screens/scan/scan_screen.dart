@@ -147,10 +147,11 @@ class _ScanScreenState extends State<ScanScreen> {
                             child: _buildDeviceCard(
                               context,
                               d.name,
-                              d.id,
+                              formatBleMacForDisplay(d.id),
                               d.signal,
                               d.signalColor,
                               d.isPrimary,
+                              d.isLednet,
                               () => _event.connectDevice(index),
                             ),
                           );
@@ -175,12 +176,12 @@ class _ScanScreenState extends State<ScanScreen> {
                               Icon(Icons.info_outline, color: AppColors.onSurfaceVariant),
                               const SizedBox(height: 8),
                               Text(
-                                '找不到设备？请确认设备已进入',
+                                '找不到设备？请确认设备已进入配对模式；含 LEDnet 的设备会置顶显示',
                                 style: Theme.of(context).textTheme.bodySmall,
                                 textAlign: TextAlign.center,
                               ),
                               Text(
-                                '配对模式',
+                                '匿名广播将显示为 MAC 地址',
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: AppColors.secondary,
                                   fontWeight: FontWeight.w600,
@@ -252,13 +253,15 @@ class _ScanScreenState extends State<ScanScreen> {
   Widget _buildDeviceCard(
     BuildContext context,
     String name,
-    String id,
+    String idFormatted,
     String signal,
     Color signalColor,
     bool isPrimary,
+    bool isLednet,
     VoidCallback onConnect,
   ) {
-    final displayId = id.length > 12 ? '${id.substring(0, 8)}...' : id;
+    final displayId =
+        idFormatted.length > 20 ? '${idFormatted.substring(0, 17)}...' : idFormatted;
     return GlassContainer(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -304,11 +307,37 @@ class _ScanScreenState extends State<ScanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (isLednet)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.kineticNeon.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.kineticNeon.withOpacity(0.6)),
+                          ),
+                          child: Text(
+                            'LEDnet',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: AppColors.kineticNeon,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(

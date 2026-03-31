@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 /// 果实 Design System Colors
 /// Based on the "Deep Space" foundation with hyper-vibrant neon accents
 class AppColors {
+  /// Kinetic Organicism：蓝牙已连接时顶部 NEON 品牌色
+  static const Color kineticNeon = Color(0xFF94D962);
+
   // Primary - Neon Pink
   static const Color primary = Color(0xFFFF89AB);
   static const Color primaryDim = Color(0xFFE30071);

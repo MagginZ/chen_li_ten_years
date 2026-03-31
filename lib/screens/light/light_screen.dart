@@ -29,6 +29,12 @@ class _LightScreenState extends State<LightScreen> {
     _event = LightEvent(_controller);
   }
 
+  @override
+  void dispose() {
+    _event.dispose();
+    super.dispose();
+  }
+
   Color _colorFromPosition(Offset localPos, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final delta = localPos - center;

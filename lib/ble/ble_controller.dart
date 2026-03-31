@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-/// 音乐同步脚本：秒数 -> RGB 指令 [R, G, B]
+import 'zengge_protocol.dart';
+
+/// 音乐同步脚本：秒数 -> RGB [R, G, B]（逻辑 RGB，经 [updateLightColor] 发 GRB 包）
 final Map<int, List<int>> syncScript = {
   5: [0xFF, 0x00, 0x00],
   12: [0x00, 0xFF, 0x00],
@@ -57,9 +59,13 @@ class BleController extends ChangeNotifier {
       }
 
       final services = await device.discoverServices();
+      try {
+        await device.requestMtu(512);
+      } catch (_) {}
+
       final writeChar = _findWritableCharacteristic(services);
       if (writeChar == null) {
-        throw Exception('No writable characteristic found for ${device.remoteId.str}');
+        throw Exception('未找到可写特征（需 FFE0/FFE1 或兼容特征）');
       }
 
       _connectedDevice = device;
@@ -67,7 +73,7 @@ class BleController extends ChangeNotifier {
       _isConnecting = false;
       notifyListeners();
 
-      debugPrint('[BleController] Connected to ${device.platformName} (${device.remoteId.str})');
+      debugPrint('[BleController] Connected, write char: ${writeChar.uuid}');
       onNavigateToTab?.call(1);
     } catch (e) {
       debugPrint('[BleController] Connection error: $e');
@@ -82,35 +88,57 @@ class BleController extends ChangeNotifier {
     debugPrint('[BleController] Disconnected');
   }
 
+  /// 征极 LEDnet 调色（GRB 字节序，见 [buildLednetColorPacket]）
+  Future<void> updateLightColor(int r, int g, int b) async {
+    final bytes = buildLednetColorPacket(r, g, b);
+    await _writeProtocolBytes(bytes);
+  }
+
+  /// 闪烁预设模式
+  Future<void> sendBlinkMode() async {
+    await _writeProtocolBytes(buildLednetBlinkPacket());
+  }
+
   Future<void> writeRgb(List<int> rgb) async {
     if (rgb.length < 3) return;
-    final cmd = [0xAA, 0x55, 0x03, rgb[0], rgb[1], rgb[2]];
-    await _writeBytes(cmd);
-    debugPrint('[BleController] writeRgb: ${rgb.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+    await updateLightColor(rgb[0], rgb[1], rgb[2]);
   }
 
   Future<void> writeHex(List<int> data) async {
-    await _writeBytes(data);
-    debugPrint('[BleController] writeHex: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+    await _writeProtocolBytes(data);
   }
 
   Future<void> triggerSyncAt(int second) async {
     final cmd = syncScript[second];
-    if (cmd == null) return;
-    debugPrint('[Sync] Sending RGB Command: $cmd');
-    await writeHex(cmd);
+    if (cmd == null || cmd.length < 3) return;
+    await updateLightColor(cmd[0], cmd[1], cmd[2]);
   }
 
+  /// 优先：Service FFE0 + Characteristic FFE1；其次 FFE9；再任意可写。
   BluetoothCharacteristic? _findWritableCharacteristic(List<BluetoothService> services) {
+    BluetoothCharacteristic? ffe1UnderFfe0;
+    BluetoothCharacteristic? ffe9;
+    BluetoothCharacteristic? fallback;
+
+    bool canWrite(BluetoothCharacteristic c) =>
+        c.properties.write || c.properties.writeWithoutResponse;
+
     for (final service in services) {
-      for (final characteristic in service.characteristics) {
-        if (characteristic.properties.write ||
-            characteristic.properties.writeWithoutResponse) {
-          return characteristic;
+      final su = service.uuid.toString().toLowerCase();
+      final isFfe0 = su.contains('ffe0');
+      for (final c in service.characteristics) {
+        if (!canWrite(c)) continue;
+        final u = c.uuid.toString().toLowerCase();
+        if (isFfe0 && u.contains('ffe1')) {
+          ffe1UnderFfe0 = c;
         }
+        if (u.contains('ffe9')) {
+          ffe9 = c;
+        }
+        fallback ??= c;
       }
     }
-    return null;
+    return ffe1UnderFfe0 ?? ffe9 ?? fallback;
   }
 
   Future<void> _disconnectCurrentDevice({required bool navigate}) async {
@@ -142,7 +170,8 @@ class BleController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _writeBytes(List<int> data) async {
+  /// 征极协议：优先 [BluetoothCharacteristic.write] 且 `withoutResponse: true`（若特征支持）
+  Future<void> _writeProtocolBytes(List<int> data) async {
     final characteristic = _writeChar;
     if (_connectedDevice == null || characteristic == null) {
       debugPrint('[BleController] Skip write without connected writable characteristic');
@@ -150,9 +179,10 @@ class BleController extends ChangeNotifier {
     }
 
     try {
+      final useWithoutResponse = characteristic.properties.writeWithoutResponse;
       await characteristic.write(
         data,
-        withoutResponse: characteristic.properties.writeWithoutResponse,
+        withoutResponse: useWithoutResponse,
       );
     } catch (e) {
       debugPrint('[BleController] Write error: $e');
