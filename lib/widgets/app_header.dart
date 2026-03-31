@@ -15,8 +15,8 @@ class AppHeader extends StatelessWidget {
       listenable: BleController.instance,
       builder: (context, _) {
         final connected = BleController.instance.isConnected;
-        final brandColor = connected ? _kineticConnected : AppColors.onSurfaceVariant;
-        final iconColor = connected ? _kineticConnected : AppColors.primary;
+        final brandColor = connected ? AppColors.primary : AppColors.onSurfaceVariant;
+        final iconColor = connected ? AppColors.primary : AppColors.onSurfaceVariant;
 
         return Container(
           height: top + 56,
