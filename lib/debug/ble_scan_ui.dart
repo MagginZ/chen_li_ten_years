@@ -5,32 +5,41 @@ import 'package:flutter/material.dart';
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// 控制台 + 可选底部 SnackBar（重要信息才 [toast]）。
-void bleScanLog(String message, {bool toast = false}) {
+///
+/// [replaceToast] 为 true（默认）时，先移除当前 SnackBar 再显示新的，避免连续写入时
+/// 多条 SnackBar 排队 4s×N，造成界面堆积与「操作滞后」观感（BLE 本身仍异步，不阻塞 GATT）。
+/// 完整日志仍以 [debugPrint] 为准。
+void bleScanLog(
+  String message, {
+  bool toast = false,
+  bool replaceToast = true,
+}) {
   debugPrint(message);
   if (!toast) return;
   final ctx = rootNavigatorKey.currentContext;
   if (ctx == null) {
-    // 首帧前 navigator 未就绪：下一帧再试，避免静默丢提示
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showBleSnackBar(message);
+      _showBleSnackBar(message, replace: replaceToast);
     });
     return;
   }
-  _showBleSnackBar(message);
+  _showBleSnackBar(message, replace: replaceToast);
 }
 
-void _showBleSnackBar(String message) {
+void _showBleSnackBar(String message, {required bool replace}) {
   final ctx = rootNavigatorKey.currentContext;
   if (ctx == null) return;
   final messenger = ScaffoldMessenger.maybeOf(ctx);
   if (messenger == null) return;
 
   final text = message.length > 200 ? '${message.substring(0, 200)}…' : message;
-  // 勿 clearSnackBars：否则连续 bleScanLog(toast:true) 只剩最后一条，易误判「只有写入结束」
+  if (replace) {
+    messenger.removeCurrentSnackBar();
+  }
   messenger.showSnackBar(
     SnackBar(
       content: Text(text, style: const TextStyle(fontSize: 13)),
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 2),
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 96),
     ),
