@@ -157,7 +157,6 @@ class _ScanScreenState extends State<ScanScreen> {
                               d.signal,
                               d.signalColor,
                               d.isPrimary,
-                              d.isLednet,
                               isConnectedToThis,
                               isConnectedToThis
                                   ? () => BleController.instance.disconnect()
@@ -266,7 +265,6 @@ class _ScanScreenState extends State<ScanScreen> {
     String signal,
     Color signalColor,
     bool isPrimary,
-    bool isLednet,
     bool isConnectedToThis,
     VoidCallback? onConnect,
   ) {
@@ -327,26 +325,6 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                       ),
                     ),
-                    if (isLednet)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.kineticNeon.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.kineticNeon.withOpacity(0.6)),
-                          ),
-                          child: Text(
-                            'LEDnet',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: AppColors.kineticNeon,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 const SizedBox(height: 4),

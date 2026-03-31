@@ -7,7 +7,8 @@ enum ZenggeRgbWireOrder {
   grb,
 }
 
-/// 静态颜色 7 字节包：`56 + 三色 + 00 F0 AA`（与 LEDnet / Magic Hue 逆向文档一致），写入特征优先 `FFE9`。
+/// 静态颜色 7 字节包：`56 + 三色 + 00 F0 AA`（Magic Hue / 征极文档：三色为 **R G B** 顺序）。
+/// 实际 BLE 写入应落在 **FFE9**；`0x7E` LEDnet 包写在 **FFE1**（见 [BleController] 路由）。
 List<int> buildZenggeStaticColorPacket(
   int r,
   int g,
