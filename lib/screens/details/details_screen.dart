@@ -270,7 +270,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 color: AppColors.primary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.palette, color: AppColors.primary),
+                              child: Icon(Icons.light_mode, color: AppColors.primary),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -278,20 +278,53 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '当前主题',
+                                    '荧光棒',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    controller.activeTheme,
+                                    ble.lampPowerOn
+                                        ? '开启'
+                                        : '关闭',
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),
                             ),
-                            // Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+                            GestureDetector(
+                              onTap: ble.isConnected ? () => event.toggleLampPower() : null,
+                              child: Opacity(
+                                opacity: ble.isConnected ? 1 : 0.45,
+                                child: Container(
+                                  width: 40,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: ble.lampPowerOn
+                                        ? AppColors.primary
+                                        : AppColors.surfaceVariant,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Align(
+                                      alignment: ble.lampPowerOn
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),

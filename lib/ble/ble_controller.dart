@@ -21,6 +21,14 @@ class BleController extends ChangeNotifier {
   bool _autoSyncEnabled = true;
   bool _isConnecting = false;
 
+  /// 荧光棒电源：开时发默认绿色（Kinetic #94D962），关时熄灭
+  static const int _lampOnR = 0x94;
+  static const int _lampOnG = 0xD9;
+  static const int _lampOnB = 0x62;
+
+  bool _lampPowerOn = true;
+  bool get lampPowerOn => _lampPowerOn;
+
   /// 连接成功后跳转到指定 Tab 的回调 (0=Scan, 1=Connect, 2=Music, 3=Light)
   void Function(int tabIndex)? onNavigateToTab;
 
@@ -32,6 +40,18 @@ class BleController extends ChangeNotifier {
   void setAutoSync(bool value) {
     _autoSyncEnabled = value;
     notifyListeners();
+  }
+
+  Future<void> setLampPowerOn(bool on) async {
+    if (_lampPowerOn == on) return;
+    _lampPowerOn = on;
+    notifyListeners();
+    if (!isConnected) return;
+    if (on) {
+      await updateLightColor(_lampOnR, _lampOnG, _lampOnB);
+    } else {
+      await updateLightColor(0, 0, 0);
+    }
   }
 
   Future<void> connect(BluetoothDevice device) async {
@@ -74,6 +94,10 @@ class BleController extends ChangeNotifier {
       notifyListeners();
 
       debugPrint('[BleController] Connected, write char: ${writeChar.uuid}');
+      // 连接成功后发默认绿色（征极需显式发包，避免「已连接但不亮」）
+      if (_lampPowerOn) {
+        await updateLightColor(_lampOnR, _lampOnG, _lampOnB);
+      }
       onNavigateToTab?.call(1);
     } catch (e) {
       debugPrint('[BleController] Connection error: $e');
@@ -167,6 +191,7 @@ class BleController extends ChangeNotifier {
     _connectedDevice = null;
     _writeChar = null;
     _isConnecting = false;
+    _lampPowerOn = true;
     notifyListeners();
   }
 

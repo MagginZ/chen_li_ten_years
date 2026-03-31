@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../ble/ble_controller.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
 import 'controller/scan_controller.dart';
-import 'event/scan_event.dart';
+import 'event/scan_event.dart' show ScanEvent, formatBleMacForDisplay;
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -32,7 +33,7 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _controller,
+      listenable: Listenable.merge([_controller, BleController.instance]),
       builder: (context, _) {
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -93,7 +94,7 @@ class _ScanScreenState extends State<ScanScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: CustomScrollView(
                     slivers: [
-                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
                     SliverToBoxAdapter(
                       child: Text(
                         _controller.isScanning ? '扫描中…' : '已发现设备',
@@ -142,6 +143,11 @@ class _ScanScreenState extends State<ScanScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final d = _controller.devices[index];
+                          final connectedId =
+                              BleController.instance.connectedDevice?.remoteId.str;
+                          final isConnectedToThis = BleController.instance.isConnected &&
+                              connectedId != null &&
+                              connectedId == d.id;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 16),
                             child: _buildDeviceCard(
@@ -152,7 +158,10 @@ class _ScanScreenState extends State<ScanScreen> {
                               d.signalColor,
                               d.isPrimary,
                               d.isLednet,
-                              () => _event.connectDevice(index),
+                              isConnectedToThis,
+                              isConnectedToThis
+                                  ? null
+                                  : () => _event.connectDevice(index),
                             ),
                           );
                         },
@@ -258,7 +267,8 @@ class _ScanScreenState extends State<ScanScreen> {
     Color signalColor,
     bool isPrimary,
     bool isLednet,
-    VoidCallback onConnect,
+    bool isConnectedToThis,
+    VoidCallback? onConnect,
   ) {
     final displayId =
         idFormatted.length > 20 ? '${idFormatted.substring(0, 17)}...' : idFormatted;
@@ -369,16 +379,23 @@ class _ScanScreenState extends State<ScanScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isPrimary ? AppColors.primary : AppColors.surfaceVariant,
+                color: isConnectedToThis
+                    ? AppColors.kineticNeon.withOpacity(0.2)
+                    : (isPrimary ? AppColors.primary : AppColors.surfaceVariant),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: isPrimary
+                border: isConnectedToThis
+                    ? Border.all(color: AppColors.kineticNeon.withOpacity(0.5))
+                    : null,
+                boxShadow: !isConnectedToThis && isPrimary
                     ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 20)]
                     : null,
               ),
               child: Text(
-                '连接',
+                isConnectedToThis ? '已连接' : '连接',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isPrimary ? AppColors.onPrimaryFixed : AppColors.onSurfaceVariant,
+                  color: isConnectedToThis
+                      ? AppColors.kineticNeon
+                      : (isPrimary ? AppColors.onPrimaryFixed : AppColors.onSurfaceVariant),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),

@@ -85,10 +85,14 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       extendBody: true,
-      appBar: const AppHeader(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(topInset + 56),
+        child: const AppHeader(),
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,

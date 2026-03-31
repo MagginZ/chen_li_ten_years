@@ -11,6 +11,11 @@ class DetailsEvent {
     ble.setAutoSync(!ble.autoSyncEnabled);
   }
 
+  void toggleLampPower() {
+    final ble = BleController.instance;
+    ble.setLampPowerOn(!ble.lampPowerOn);
+  }
+
   void disconnect() {
     BleController.instance.disconnect();
     _controller.disconnect();
