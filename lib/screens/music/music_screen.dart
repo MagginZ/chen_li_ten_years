@@ -435,7 +435,7 @@ class _MusicScreenState extends State<MusicScreen>
                               const SizedBox(height: 4),
                               Text(
                                 _playback.useMetronomeBeatSync
-                                    ? '随波形/BPM 变色（可下调 BPM）'
+                                    ? '按 BPM 节拍变色（可调）'
                                     : '与 BleController.syncScript 一致（固定秒数）',
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.onSurfaceVariant,
@@ -457,9 +457,7 @@ class _MusicScreenState extends State<MusicScreen>
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    _playback.hasWaveformBeats && !_playback.beatAnalyzing
-                                        ? 'BPM（波形已就绪，当前未使用）'
-                                        : 'BPM（无波形或微调）',
+                                    'BPM（节拍器）',
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                           color: AppColors.onSurfaceVariant,
                                           fontWeight: FontWeight.bold,
@@ -488,9 +486,7 @@ class _MusicScreenState extends State<MusicScreen>
                                   min: 60,
                                   max: 200,
                                   divisions: 28,
-                                  onChanged: (_playback.beatAnalyzing || _playback.hasWaveformBeats)
-                                      ? null
-                                      : (v) => _event.setBpm(v),
+                                  onChanged: (v) => _event.setBpm(v),
                                 ),
                               ),
                             ],
