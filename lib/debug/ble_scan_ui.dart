@@ -9,11 +9,24 @@ void bleScanLog(String message, {bool toast = false}) {
   debugPrint(message);
   if (!toast) return;
   final ctx = rootNavigatorKey.currentContext;
+  if (ctx == null) {
+    // 首帧前 navigator 未就绪：下一帧再试，避免静默丢提示
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showBleSnackBar(message);
+    });
+    return;
+  }
+  _showBleSnackBar(message);
+}
+
+void _showBleSnackBar(String message) {
+  final ctx = rootNavigatorKey.currentContext;
   if (ctx == null) return;
   final messenger = ScaffoldMessenger.maybeOf(ctx);
   if (messenger == null) return;
 
   final text = message.length > 200 ? '${message.substring(0, 200)}…' : message;
+  messenger.clearSnackBars();
   messenger.showSnackBar(
     SnackBar(
       content: Text(text, style: const TextStyle(fontSize: 13)),

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'debug/ble_scan_ui.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_header.dart';
 import 'widgets/bottom_nav_bar.dart';
@@ -48,6 +49,7 @@ class NeonPulseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: '果实',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,

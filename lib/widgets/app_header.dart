@@ -64,7 +64,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'NEON PULSE',
+                      '果实',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: brandColor,
