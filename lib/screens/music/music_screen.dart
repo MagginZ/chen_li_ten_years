@@ -321,78 +321,182 @@ class _MusicScreenState extends State<MusicScreen>
                       const SizedBox(height: 24),
                       GlassContainer(
                         padding: const EdgeInsets.all(20),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: AppColors.musicPrimary.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.fluorescent, color: AppColors.musicPrimary),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '灯光同步',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: AppColors.onSurface,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.musicPrimary.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _playback.syncEnabled
-                                        ? '随节拍同步中…'
-                                        : '已关闭同步',
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: _event.toggleSync,
-                              child: Container(
-                                width: 56,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: _playback.syncEnabled
-                                      ? AppColors.musicPrimary
-                                      : AppColors.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(14),
+                                  child: Icon(Icons.fluorescent, color: AppColors.musicPrimary),
                                 ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: Align(
-                                    alignment: _playback.syncEnabled
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    child: Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.onPrimary,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.black.withValues(alpha: 0.14),
-                                            blurRadius: 3,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '灯光同步',
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppColors.onSurface,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _playback.syncEnabled
+                                            ? _playback.beatSyncHint
+                                            : '已关闭同步',
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: _event.toggleSync,
+                                  child: Container(
+                                    width: 56,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: _playback.syncEnabled
+                                          ? AppColors.musicPrimary
+                                          : AppColors.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Align(
+                                        alignment: _playback.syncEnabled
+                                            ? Alignment.centerRight
+                                            : Alignment.centerLeft,
+                                        child: Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.onPrimary,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.black.withValues(alpha: 0.14),
+                                                blurRadius: 3,
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
+                            if (_playback.syncEnabled) ...[
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '同步方式',
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: AppColors.onSurfaceVariant,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.2,
+                                          ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '时间轴',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: !_playback.useMetronomeBeatSync
+                                              ? AppColors.musicPrimary
+                                              : AppColors.onSurfaceVariant,
+                                        ),
+                                  ),
+                                  Switch(
+                                    value: _playback.useMetronomeBeatSync,
+                                    onChanged: (v) => _event.setUseMetronomeBeatSync(v),
+                                    activeThumbColor: AppColors.musicPrimary,
+                                  ),
+                                  Text(
+                                    '节拍器',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: _playback.useMetronomeBeatSync
+                                              ? AppColors.musicPrimary
+                                              : AppColors.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _playback.useMetronomeBeatSync
+                                    ? '随波形/BPM 变色（可下调 BPM）'
+                                    : '与 BleController.syncScript 一致（固定秒数）',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                      fontSize: 11,
+                                    ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
+                      if (_playback.syncEnabled && _playback.useMetronomeBeatSync) ...[
+                        const SizedBox(height: 16),
+                        GlassContainer(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _playback.hasWaveformBeats && !_playback.beatAnalyzing
+                                        ? 'BPM（波形已就绪，当前未使用）'
+                                        : 'BPM（无波形或微调）',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2,
+                                        ),
+                                  ),
+                                  Text(
+                                    '${_playback.bpm.round()}',
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                          color: AppColors.musicPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              SliderTheme(
+                                data: SliderThemeData(
+                                  trackHeight: 4,
+                                  activeTrackColor: AppColors.musicPrimary,
+                                  inactiveTrackColor: AppColors.surfaceContainerHighest,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                                ),
+                                child: Slider(
+                                  value: _playback.bpm.clamp(60.0, 200.0),
+                                  min: 60,
+                                  max: 200,
+                                  divisions: 28,
+                                  onChanged: (_playback.beatAnalyzing || _playback.hasWaveformBeats)
+                                      ? null
+                                      : (v) => _event.setBpm(v),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),

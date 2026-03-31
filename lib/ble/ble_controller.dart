@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../debug/ble_scan_ui.dart';
+import '../settings/light_rgb_compensation.dart';
 import 'zengge_protocol.dart';
 
 String _hexBytes(List<int> data) =>
@@ -124,7 +125,8 @@ class BleController extends ChangeNotifier {
     final g = on ? _lampOnG : 0;
     final b = on ? _lampOnB : 0;
     bleScanLog('[BleLamp] 调色 RGB=($r,$g,$b) on=$on', toast: true);
-    final w = _rgbWireCompensateRb(r, g, b);
+    final t = LightRgbCompensation.instance.apply(r, g, b);
+    final w = _rgbWireCompensateRb(t[0], t[1], t[2]);
     final wr = w[0];
     final wg = w[1];
     final wb = w[2];
@@ -270,9 +272,10 @@ class BleController extends ChangeNotifier {
   }
 
   /// 征极 LEDnet 调色：FF01 用 **SDK 0x31**；其它用 **0x7E GRB**。
-  /// [r,g,b] 为界面逻辑 RGB；内部经 [_rgbWireCompensateRb] 再组包。
+  /// [r,g,b] 为界面逻辑 RGB；先 [LightRgbCompensation.apply]，再 [_rgbWireCompensateRb]。
   Future<void> updateLightColor(int r, int g, int b) async {
-    final w = _rgbWireCompensateRb(r, g, b);
+    final t = LightRgbCompensation.instance.apply(r, g, b);
+    final w = _rgbWireCompensateRb(t[0], t[1], t[2]);
     final wr = w[0];
     final wg = w[1];
     final wb = w[2];

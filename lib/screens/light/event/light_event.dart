@@ -60,6 +60,11 @@ class LightEvent {
     _scheduleDebouncedLightUpdate();
   }
 
+  /// RGB 增益变更后复用 debounce 再下发当前色。
+  void scheduleTrimRepush() {
+    _scheduleDebouncedLightUpdate();
+  }
+
   void selectMode(String mode) {
     _stopBreathing();
     _controller.selectMode(mode);

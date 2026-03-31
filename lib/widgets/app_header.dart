@@ -69,23 +69,7 @@ class AppHeader extends StatelessWidget {
                       letterSpacing: 1.4,
                     ),
               ),
-              const Spacer(),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.outlineVariant,
-                  ),
-                ),
-                child: Icon(
-                  Icons.person,
-                  color: AppColors.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
+              
             ],
           ),
         );

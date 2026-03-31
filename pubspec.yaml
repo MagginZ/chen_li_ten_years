@@ -16,6 +16,10 @@ dependencies:
   just_audio: ^0.10.5
   permission_handler: ^11.3.0
   http: ^1.2.0
+  shared_preferences: ^2.3.0
+  audio_waveforms: ^2.0.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

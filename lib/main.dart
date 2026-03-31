@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 import 'widgets/app_header.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'ble/ble_controller.dart';
+import 'settings/light_rgb_compensation.dart';
 import 'screens/scan/scan_screen.dart';
 import 'screens/details/details_screen.dart';
 import 'screens/music/music_tab_screen.dart';
@@ -39,6 +40,8 @@ void main() async {
     SystemUiMode.edgeToEdge,
     overlays: [SystemUiOverlay.top],
   );
+
+  await LightRgbCompensation.instance.load();
 
   runApp(const NeonPulseApp());
 }
