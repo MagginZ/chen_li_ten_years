@@ -7,7 +7,7 @@ class AppColors {
   static const Color kineticNeon = Color(0xFF94D962);
 
   // Primary - Neon Pink
-  static const Color primary = Color.fromARGB(255, 197, 225, 177);
+  static const Color primary = Color(0xFF94D962);
   static const Color primaryDim = Color(0xFF94D962);
   static const Color primaryContainer = Color.fromARGB(255, 153, 212, 112);
   static const Color primaryFixed = Color.fromARGB(255, 153, 212, 112);

@@ -514,7 +514,7 @@ class _LightScreenState extends State<LightScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? AppColors.primaryDim
                                     : AppColors.surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(28),
                                 border: isSelected
