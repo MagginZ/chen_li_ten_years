@@ -1,6 +1,6 @@
 # 果实
 
-一个基于 Flutter 开发的 K-pop 应援棒控制应用，具有赛博朋克霓虹美学设计风格。原本想要绿色的，但因为要扫描蓝牙，绿色的像雷达哈哈哈哈，算了算了还是初版最好看，重庆场的应援棒就是粉色不是么😬
+一个基于 Flutter 开发的 K-pop 应援棒控制应用，主题色绿色
 
 
 🧠🌟想法诞生于「陈粒十周年巡演」，带回家的应援棒只能默默放着，于是开始研究它为什么只能在演唱会期间亮，就不能手机上控制么，知道原理后开始搜类似的应用，搜到某个小程序做到了我想要的效果，但仅限xx粉丝可用，不就多一个蓝牙模块么，焊一个不就好了?开搞！！
@@ -9,12 +9,12 @@
 
 - **深色主题**: 深空背景 (#0E0E13) 配合霓虹强调色
 - **毛玻璃效果**: 使用 BackdropFilter 实现玻璃态设计
-- **霓虹光晕**: 粉、青、紫三色霓虹色调
+- **霓虹光晕**: 绿、青、紫三色霓虹色调
 - **流畅动画**: 精心设计的过渡和脉冲动画
 
 ## 颜色系统
 
-- **Primary (粉红)**: #FF89AB - 主品牌色
+- **Primary (粉红)**: #94D962 - 主品牌色
 - **Secondary (青色)**: #00E3FD - 辅助色
 - **Tertiary (紫色)**: #AC89FF - 第三色
 - **Surface (深空)**: #0E0E13 - 背景色
@@ -35,6 +35,22 @@ flutter run                    # 自动选择可用设备
 flutter run -d chrome          # 浏览器
 flutter run -d <device-id>     # 指定设备
 ```
+
+## 后端 API
+
+FastAPI 歌单服务，提供 `/api/playlist` 接口（陈粒音乐）。
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+- 服务地址: `http://localhost:8000`
+- 局域网访问: `http://<电脑IP>:8000`（如 iPhone 同网访问）
+
 
 ### 打 Android APK
 
@@ -81,20 +97,6 @@ flutter build apk --release --split-per-abi
 
    **若提示签名/provisioning 错误**：用 Xcode 打开 `ios/Runner.xcworkspace`，选中 Runner → Signing & Capabilities，确认已勾选 "Automatically manage signing" 并选择你的 Apple ID 开发团队。
 
-## 后端 API
-
-FastAPI 歌单服务，提供 `/api/playlist` 接口（陈粒音乐）。
-
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-- 服务地址: `http://localhost:8000`
-- 局域网访问: `http://<电脑IP>:8000`（如 iPhone 同网访问）
 
 ## 项目结构
  

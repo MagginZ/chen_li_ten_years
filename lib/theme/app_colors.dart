@@ -7,17 +7,17 @@ class AppColors {
   static const Color kineticNeon = Color(0xFF94D962);
 
   // Primary - Neon Pink
-  static const Color primary = Color(0xFFFF89AB);
-  static const Color primaryDim = Color(0xFFE30071);
-  static const Color primaryContainer = Color(0xFFFF709E);
-  static const Color primaryFixed = Color(0xFFFF709E);
-  static const Color primaryFixedDim = Color(0xFFFF5290);
-  static const Color onPrimary = Color(0xFF62002D);
+  static const Color primary = Color.fromARGB(255, 197, 225, 177);
+  static const Color primaryDim = Color(0xFF94D962);
+  static const Color primaryContainer = Color.fromARGB(255, 153, 212, 112);
+  static const Color primaryFixed = Color.fromARGB(255, 153, 212, 112);
+  static const Color primaryFixedDim = Color.fromARGB(255, 159, 223, 113);
+  static const Color onPrimary = Color(0xffffffff);
   static const Color onPrimaryFixed = Color(0xFF000000);
-  static const Color onPrimaryContainer = Color(0xFF4C0021);
-  static const Color onPrimaryFixedVariant = Color(0xFF5D002A);
-  static const Color inversePrimary = Color(0xFFBC005C);
-  static const Color surfaceTint = Color(0xFFFF89AB);
+  static const Color onPrimaryContainer = Color.fromARGB(255, 39, 63, 21);
+  static const Color onPrimaryFixedVariant = Color.fromARGB(255, 29, 51, 14);
+  static const Color inversePrimary = Color.fromARGB(255, 111, 183, 59);
+  static const Color surfaceTint = Color.fromARGB(255, 197, 225, 177);
 
   // Secondary - Neon Cyan
   static const Color secondary = Color(0xFF00E3FD);
@@ -42,18 +42,18 @@ class AppColors {
   static const Color onTertiaryFixedVariant = Color(0xFF4700A7);
 
   // Error
-  static const Color error = Color(0xFFFF6E84);
-  static const Color errorDim = Color(0xFFD73357);
-  static const Color errorContainer = Color(0xFFA70138);
-  static const Color onError = Color(0xFF490013);
-  static const Color onErrorContainer = Color(0xFFFFB2B9);
+  static const Color error = Color.fromARGB(255, 153, 212, 112);
+  static const Color errorDim = Color.fromARGB(255, 159, 223, 113);
+  static const Color errorContainer = Color.fromARGB(255, 77, 123, 45);
+  static const Color onError = Color.fromARGB(255, 39, 63, 21);
+  static const Color onErrorContainer = Color.fromARGB(255, 197, 225, 177);
 
   // Surface - Deep Space Foundation
   static const Color background = Color(0xFF0E0E13);
   /// Music Sync 页面背景色
   static const Color musicBackground = Color(0xFF10140F);
   /// Music Sync 进度条滑块发光色 (primary #0xFFFF6E84)
-  static const Color musicPrimary = Color(0xFFFF6E84);
+  static const Color musicPrimary = Color(0xFF94D962);
   static const Color onBackground = Color(0xFFF8F5FD);
   static const Color surface = Color(0xFF0E0E13);
   static const Color surfaceDim = Color(0xFF0E0E13);

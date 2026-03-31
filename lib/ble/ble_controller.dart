@@ -8,6 +8,15 @@ import 'zengge_protocol.dart';
 String _hexBytes(List<int> data) =>
     data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
 
+/// 荧光棒固件对「逻辑 RGB」与线序组合会等效 **交换 R 与 B**（现象：蓝→橙、粉↔紫）。
+/// 送入 [buildZenggeSdkRgbCommand0x31] / [buildLednetColorPacket] / [buildZenggeStaticColorPacket] 前做一次 R↔B 补偿。
+List<int> _rgbWireCompensateRb(int r, int g, int b) {
+  final rr = r.clamp(0, 255);
+  final gg = g.clamp(0, 255);
+  final bb = b.clamp(0, 255);
+  return <int>[bb, gg, rr];
+}
+
 /// 音乐同步脚本：秒数 -> RGB [R, G, B]（逻辑 RGB，经 [updateLightColor] 发 GRB 包）
 final Map<int, List<int>> syncScript = {
   5: [0xFF, 0x00, 0x00],
@@ -115,9 +124,13 @@ class BleController extends ChangeNotifier {
     final g = on ? _lampOnG : 0;
     final b = on ? _lampOnB : 0;
     bleScanLog('[BleLamp] 调色 RGB=($r,$g,$b) on=$on', toast: true);
-    final inner7e = buildLednetColorPacket(r, g, b);
+    final w = _rgbWireCompensateRb(r, g, b);
+    final wr = w[0];
+    final wg = w[1];
+    final wb = w[2];
+    final inner7e = buildLednetColorPacket(wr, wg, wb);
     if (_hasLednetWfChannels) {
-      final p31 = buildZenggeSdkRgbCommand0x31(r, g, b);
+      final p31 = buildZenggeSdkRgbCommand0x31(wr, wg, wb);
       final pwr = buildZenggeSdkLegacyPower0x71(on);
       // 1) 电源 + Transport（部分固件必须先 0x71）
       await _writeFf01ZenggeTransport(
@@ -164,7 +177,7 @@ class BleController extends ChangeNotifier {
       preferWithResponse: true,
     );
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    final zRgb = buildZenggeStaticColorPacket(r, g, b, order: ZenggeRgbWireOrder.rgb);
+    final zRgb = buildZenggeStaticColorPacket(wr, wg, wb, order: ZenggeRgbWireOrder.rgb);
     await _writeProtocolBytes(
       zRgb,
       tag: 'lamp/ZENGGE(56)→FFE9',
@@ -181,7 +194,7 @@ class BleController extends ChangeNotifier {
         overrideChar: _chrFfe1,
       );
     }
-    final zGrb = buildZenggeStaticColorPacket(r, g, b, order: ZenggeRgbWireOrder.grb);
+    final zGrb = buildZenggeStaticColorPacket(wr, wg, wb, order: ZenggeRgbWireOrder.grb);
     if (_hexBytes(zRgb) != _hexBytes(zGrb)) {
       await Future<void>.delayed(const Duration(milliseconds: 40));
       await _writeProtocolBytes(
@@ -257,9 +270,14 @@ class BleController extends ChangeNotifier {
   }
 
   /// 征极 LEDnet 调色：FF01 用 **SDK 0x31**；其它用 **0x7E GRB**。
+  /// [r,g,b] 为界面逻辑 RGB；内部经 [_rgbWireCompensateRb] 再组包。
   Future<void> updateLightColor(int r, int g, int b) async {
+    final w = _rgbWireCompensateRb(r, g, b);
+    final wr = w[0];
+    final wg = w[1];
+    final wb = w[2];
     if (_hasLednetWfChannels) {
-      final p31 = buildZenggeSdkRgbCommand0x31(r, g, b);
+      final p31 = buildZenggeSdkRgbCommand0x31(wr, wg, wb);
       await _writeFf01ZenggeTransport(
         p31,
         tag: 'color ZENGGE 0x31+Transport',
@@ -267,7 +285,7 @@ class BleController extends ChangeNotifier {
       );
       return;
     }
-    await _writeProtocolBytes(buildLednetColorPacket(r, g, b));
+    await _writeProtocolBytes(buildLednetColorPacket(wr, wg, wb));
   }
 
   /// 闪烁预设模式

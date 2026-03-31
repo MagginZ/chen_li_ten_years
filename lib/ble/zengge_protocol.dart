@@ -58,14 +58,14 @@ List<int> encodeLednetWfTransportV0(
   ];
 }
 
-/// **征极 SDK / lednetwf** 的 RGB 命令：`0x31` + R,G,B + WW,CW + mode + persist + **checksum**。
-/// 与 [Android SDK `write(..., 0x0b, commandData)`](http://cnwifidevsdk.magichue.net:4000/ble/AndroidSdk.html) 中 `commandData` 常见形态一致（再由固件加 Transport）。
-/// 参考：lednetwf_ble `protocol_docs/05_basic_commands.md`（checksum = sum(前 8 字节) & 0xFF）。
+/// **征极 SDK / lednetwf** 的 RGB 命令：`0x31` + 三色 + WW,CW + mode + persist + **checksum**。
+/// 文档为 R,G,B，但 WS2812/荧光棒常与 [buildLednetColorPacket] 一致走 **GRB**（[wireGrb]=true）。
 List<int> buildZenggeSdkRgbCommand0x31(
   int r,
   int g,
   int b, {
   bool persistToFlash = false,
+  bool wireGrb = true,
 }) {
   final rr = r.clamp(0, 255);
   final gg = g.clamp(0, 255);
@@ -74,7 +74,10 @@ List<int> buildZenggeSdkRgbCommand0x31(
   const int cw = 0;
   const mode = 0xF0;
   final persist = persistToFlash ? 0xF0 : 0x0F;
-  final body = <int>[0x31, rr, gg, bb, ww, cw, mode, persist];
+  final c1 = wireGrb ? gg : rr;
+  final c2 = wireGrb ? rr : gg;
+  final c3 = bb;
+  final body = <int>[0x31, c1, c2, c3, ww, cw, mode, persist];
   final chk = body.fold<int>(0, (a, e) => a + e) & 0xFF;
   return [...body, chk];
 }

@@ -13,11 +13,9 @@ class LightScreen extends StatefulWidget {
 }
 
 class _LightScreenState extends State<LightScreen> {
-  static const double _wheelSize = 320;
-  static const double _wheelOuterRadius = _wheelSize / 2;
-  static const double _wheelInnerRadius = 60;
-  static const double _pickerSize = 40;
-  static const double _pickerTrackRadius = (_wheelInnerRadius + _wheelOuterRadius - _pickerSize) / 2;
+  static const double _wheelSize = LightController.wheelSize;
+  static const double _pickerSize = LightController.pickerSize;
+  static double get _pickerTrackRadius => LightController.pickerTrackRadius;
 
   late final LightController _controller;
   late final LightEvent _event;
@@ -35,29 +33,32 @@ class _LightScreenState extends State<LightScreen> {
     super.dispose();
   }
 
-  Color _colorFromPosition(Offset localPos, Size size) {
+  /// 与 Flutter [SweepGradient] 一致：0° 在 3 点钟方向（红），逆时针色相增加。
+  double _hueDegreesFromPosition(Offset localPos, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final delta = localPos - center;
-    final angle = math.atan2(delta.dy, delta.dx);
-    final hue = (angle + math.pi) / (2 * math.pi);
-    return HSVColor.fromAHSV(1.0, hue * 360, 1.0, 1.0).toColor();
+    var deg = math.atan2(delta.dy, delta.dx) * 180 / math.pi;
+    if (deg < 0) deg += 360;
+    return deg;
   }
 
-  Offset _pickerOffsetFromPosition(Offset localPos, Size size) {
+  Color _colorFromHue(double hueDeg) {
+    return HSVColor.fromAHSV(1.0, hueDeg, 1.0, 1.0).toColor();
+  }
+
+  Offset _offsetFromHue(double hueDeg, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final delta = localPos - center;
-    final distance = delta.distance;
-    if (distance == 0) {
-      return Offset(center.dx, center.dy - _pickerTrackRadius);
-    }
-
-    final normalized = Offset(delta.dx / distance, delta.dy / distance);
-
+    final rad = hueDeg * math.pi / 180;
     return Offset(
-      center.dx + normalized.dx * _pickerTrackRadius,
-      center.dy + normalized.dy * _pickerTrackRadius,
+      center.dx + math.cos(rad) * _pickerTrackRadius,
+      center.dy + math.sin(rad) * _pickerTrackRadius,
     );
   }
+
+  List<Color> get _hueRingColors => List<Color>.generate(
+        7,
+        (i) => HSVColor.fromAHSV(1.0, (i * 60.0) % 360, 1.0, 1.0).toColor(),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -127,15 +128,6 @@ class _LightScreenState extends State<LightScreen> {
                                 letterSpacing: -0.02,
                               ),
                             ),
-                            TextSpan(
-                              text: '光晕',
-                              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.02,
-                                color: AppColors.primary,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -161,19 +153,19 @@ class _LightScreenState extends State<LightScreen> {
                           height: _wheelSize,
                           child: GestureDetector(
                             onTapDown: (d) {
-                              final color = _colorFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
-                              final offset = _pickerOffsetFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
-                              _event.commitColor(color, offset);
+                              const sz = Size(_wheelSize, _wheelSize);
+                              final h = _hueDegreesFromPosition(d.localPosition, sz);
+                              _event.commitColor(_colorFromHue(h), _offsetFromHue(h, sz));
                             },
                             onPanStart: (d) {
-                              final color = _colorFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
-                              final offset = _pickerOffsetFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
-                              _event.previewColor(color, offset);
+                              const sz = Size(_wheelSize, _wheelSize);
+                              final h = _hueDegreesFromPosition(d.localPosition, sz);
+                              _event.previewColor(_colorFromHue(h), _offsetFromHue(h, sz));
                             },
                             onPanUpdate: (d) {
-                              final color = _colorFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
-                              final offset = _pickerOffsetFromPosition(d.localPosition, const Size(_wheelSize, _wheelSize));
-                              _event.previewColor(color, offset);
+                              const sz = Size(_wheelSize, _wheelSize);
+                              final h = _hueDegreesFromPosition(d.localPosition, sz);
+                              _event.previewColor(_colorFromHue(h), _offsetFromHue(h, sz));
                             },
                             onPanEnd: (_) {
                               _event.commitColor(_controller.selectedColor, _controller.pickerOffset);
@@ -210,17 +202,18 @@ class _LightScreenState extends State<LightScreen> {
                                     ],
                                   ),
                                   child: Container(
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: SweepGradient(
-                                        colors: [
-                                          Colors.red,
-                                          Colors.purple,
-                                          Colors.blue,
-                                          Colors.cyan,
-                                          Colors.green,
-                                          Colors.yellow,
-                                          Colors.red,
+                                        colors: _hueRingColors,
+                                        stops: const [
+                                          0,
+                                          1 / 6,
+                                          2 / 6,
+                                          3 / 6,
+                                          4 / 6,
+                                          5 / 6,
+                                          1,
                                         ],
                                       ),
                                     ),
@@ -337,7 +330,7 @@ class _LightScreenState extends State<LightScreen> {
                                     child: Slider(
                                       value: _controller.brightness,
                                       onChanged: (v) => _event.setBrightness(v),
-                                      activeColor: AppColors.primary,
+                                      activeColor: _controller.selectedColor,
                                       inactiveColor: AppColors.surfaceContainerLowest,
                                     ),
                                   ),

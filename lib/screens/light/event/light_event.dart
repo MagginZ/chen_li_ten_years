@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -13,9 +14,45 @@ class LightEvent {
   /// 最多约 20 次/秒（50ms）
   static const Duration _debounce = Duration(milliseconds: 50);
   Timer? _debounceTimer;
+  Timer? _breathTimer;
+  double _breathMul = 1.0;
+  double _breathPhase = 0;
 
   void dispose() {
     _debounceTimer?.cancel();
+    _breathTimer?.cancel();
+  }
+
+  void _stopBreathing() {
+    _breathTimer?.cancel();
+    _breathTimer = null;
+    _breathMul = 1.0;
+  }
+
+  void _startBreathing() {
+    _breathTimer?.cancel();
+    _breathPhase = 0;
+    void tick() {
+      if (_controller.selectedMode != '呼吸') {
+        _breathTimer?.cancel();
+        _breathTimer = null;
+        _breathMul = 1.0;
+        return;
+      }
+      _breathPhase += 0.08;
+      _breathMul = 0.35 + 0.65 * (0.5 + 0.5 * math.sin(_breathPhase));
+      _pushScaledRgb(_controller.colorToRgb(_controller.selectedColor));
+    }
+
+    tick();
+    _breathTimer = Timer.periodic(const Duration(milliseconds: 50), (_) => tick());
+  }
+
+  Future<void> _burstBlink() async {
+    for (var i = 0; i < 4; i++) {
+      await BleController.instance.sendBlinkMode();
+      if (i < 3) await Future<void>.delayed(const Duration(milliseconds: 90));
+    }
   }
 
   void setBrightness(double value) {
@@ -24,11 +61,26 @@ class LightEvent {
   }
 
   void selectMode(String mode) {
+    _stopBreathing();
     _controller.selectMode(mode);
-    if (mode == '闪烁') {
-      BleController.instance.sendBlinkMode().catchError((Object e, StackTrace st) {
-        debugPrint('[LightEvent] sendBlinkMode failed: $e');
-      });
+    switch (mode) {
+      case '闪烁':
+        BleController.instance.sendBlinkMode().catchError((Object e, StackTrace st) {
+          debugPrint('[LightEvent] sendBlinkMode failed: $e');
+        });
+        break;
+      case '爆闪':
+        _burstBlink().catchError((Object e, StackTrace st) {
+          debugPrint('[LightEvent] burst blink failed: $e');
+        });
+        break;
+      case '呼吸':
+        _startBreathing();
+        break;
+      case '标准':
+      default:
+        _pushScaledRgb(_controller.colorToRgb(_controller.selectedColor));
+        break;
     }
   }
 
@@ -60,7 +112,7 @@ class LightEvent {
 
   void _pushScaledRgb(List<int> rgb) {
     if (rgb.length < 3) return;
-    final b = _controller.brightness;
+    final b = _controller.brightness * _breathMul;
     final r = (rgb[0] * b).round().clamp(0, 255);
     final g = (rgb[1] * b).round().clamp(0, 255);
     final bl = (rgb[2] * b).round().clamp(0, 255);
