@@ -26,7 +26,7 @@ void _showBleSnackBar(String message) {
   if (messenger == null) return;
 
   final text = message.length > 200 ? '${message.substring(0, 200)}…' : message;
-  messenger.clearSnackBars();
+  // 勿 clearSnackBars：否则连续 bleScanLog(toast:true) 只剩最后一条，易误判「只有写入结束」
   messenger.showSnackBar(
     SnackBar(
       content: Text(text, style: const TextStyle(fontSize: 13)),

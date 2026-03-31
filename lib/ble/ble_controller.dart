@@ -20,9 +20,13 @@ class BleController extends ChangeNotifier {
   static final BleController instance = BleController._();
 
   BluetoothDevice? _connectedDevice;
-  /// LEDnet `0x7E…` 走 FFE0 下的 FFE1（与常见逆向一致）。
+  /// **LEDnetWF / FFFF/FF01**：与 [ZENGGE Android SDK `write(mac, 0x0b, commandData)`](http://cnwifidevsdk.magichue.net:4000/ble/AndroidSdk.html) 对齐——`0x0B` 即 Transport **cmdId=11**；`commandData` 用 **0x31 RGB+校验**（优先），必要时再发 **0x7E** 内层兼容。
+  BluetoothCharacteristic? _chrFf01;
+  /// 部分荧光棒/双通道固件：服务 **FE00**、写 **FF11**（与 FF01 并存时需「双写」才亮）。
+  BluetoothCharacteristic? _chrFf11;
+  /// 旧版 LEDnet：`0x7E…` 走 FFE0 下的 FFE1。
   BluetoothCharacteristic? _chrFfe1;
-  /// Zengge 静态色 `0x56…` 走 FFE9（官方/Magic Hue 文档：颜色命令写 FFE9，勿写到 FFE1）。
+  /// Magic Hue 类：`0x56…` 走 FFE9（与 FF01/7E 设备互斥场景常见）。
   BluetoothCharacteristic? _chrFfe9;
   /// 其它可写特征（仅当上面都缺失时兜底）。
   BluetoothCharacteristic? _chrFallback;
@@ -30,6 +34,10 @@ class BleController extends ChangeNotifier {
   final List<StreamSubscription<List<int>>> _notifySubscriptions = [];
   bool _autoSyncEnabled = true;
   bool _isConnecting = false;
+  /// LEDnetWF Transport v0 的序号（0–255）。
+  int _transportSeq = 0;
+
+  bool get _hasLednetWfChannels => _chrFf01 != null || _chrFf11 != null;
 
   /// 荧光棒电源：开时发默认绿色（Kinetic #94D962），关时熄灭
   static const int _lampOnR = 0x94;
@@ -46,7 +54,7 @@ class BleController extends ChangeNotifier {
   BluetoothDevice? get connectedDevice => _connectedDevice;
 
   BluetoothCharacteristic? get _primaryWriteChar =>
-      _chrFfe1 ?? _chrFfe9 ?? _chrFallback;
+      _chrFf01 ?? _chrFf11 ?? _chrFfe1 ?? _chrFfe9 ?? _chrFallback;
 
   bool get isConnected => _connectedDevice != null && _primaryWriteChar != null;
   bool get isConnecting => _isConnecting;
@@ -57,11 +65,12 @@ class BleController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 征极类设备：部分固件只认 **FFE1 的 0x7E** 包，部分只认 **FFE9 的 0x56** 包，开关需双发。
+  /// 征极类：FFFF/FF01 走 **SDK 0x31 + Transport**；旧款可能 **FFE1 的 0x7E** + **FFE9 的 0x56** 双发。
   Future<void> setLampPowerOn(bool on) async {
     bleScanLog(
       '[BleLamp] setLampPowerOn($on) isConnected=$isConnected '
       'dev=${_connectedDevice?.remoteId.str ?? "-"} '
+      'ff01=${_chrFf01?.uuid ?? "-"} ff11=${_chrFf11?.uuid ?? "-"} '
       'ffe1=${_chrFfe1?.uuid ?? "-"} ffe9=${_chrFfe9?.uuid ?? "-"}',
       toast: true,
     );
@@ -73,7 +82,11 @@ class BleController extends ChangeNotifier {
     }
     _logWriteTarget('setLampPowerOn');
     await _applyLampPowerToDevice(on);
-    bleScanLog('[BleLamp] setLampPowerOn($on) 双发结束', toast: true);
+    bleScanLog(
+      '[BleLamp] setLampPowerOn($on) 写入流程结束 | hasWF=$_hasLednetWfChannels '
+      'FF01=${_chrFf01 != null} FF11=${_chrFf11 != null}',
+      toast: true,
+    );
   }
 
   void _logWriteTarget(String reason) {
@@ -90,6 +103,8 @@ class BleController extends ChangeNotifier {
       );
     }
 
+    one('FFFF/FF01(7E)', _chrFf01);
+    one('FE00/FF11(7E镜像)', _chrFf11);
     one('FFE1(7E)', _chrFfe1);
     one('FFE9(56)', _chrFfe9);
     one('fallback', _chrFallback);
@@ -99,15 +114,56 @@ class BleController extends ChangeNotifier {
     final r = on ? _lampOnR : 0;
     final g = on ? _lampOnG : 0;
     final b = on ? _lampOnB : 0;
-    bleScanLog('[BleLamp] 双发 RGB=($r,$g,$b) on=$on', toast: true);
+    bleScanLog('[BleLamp] 调色 RGB=($r,$g,$b) on=$on', toast: true);
+    final inner7e = buildLednetColorPacket(r, g, b);
+    if (_hasLednetWfChannels) {
+      final p31 = buildZenggeSdkRgbCommand0x31(r, g, b);
+      final pwr = buildZenggeSdkLegacyPower0x71(on);
+      // 1) 电源 + Transport（部分固件必须先 0x71）
+      await _writeFf01ZenggeTransport(
+        pwr,
+        tag: 'SDK 0x71 power+Transport',
+        toastLog: true,
+        preferWithResponse: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 55));
+      // 2) 0x31 / 7E + Transport；优先「带响应写」（无响应写常被固件丢弃）
+      await _writeFf01ZenggeTransport(
+        p31,
+        tag: 'ZENGGE SDK 0x31+Transport',
+        toastLog: true,
+        preferWithResponse: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 45));
+      await _writeFf01ZenggeTransport(
+        inner7e,
+        tag: 'LEDNET 7E+Transport',
+        toastLog: true,
+        preferWithResponse: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 45));
+      // 3) 裸写备选：部分固件不套外层 Transport，直接收内层
+      await _writeFf01RawCommandData(
+        p31,
+        tag: 'FF01 裸写 0x31',
+        toastLog: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 35));
+      await _writeFf01RawCommandData(
+        inner7e,
+        tag: 'FF01 裸写 7E',
+        toastLog: true,
+      );
+      bleScanLog('[BleLamp] FF01: 0x71/0x31/7E（Transport+裸写）已发', toast: true);
+      return;
+    }
     await _writeProtocolBytes(
-      buildLednetColorPacket(r, g, b),
-      tag: 'lamp/LEDNET(7E)→FFE1',
+      inner7e,
+      tag: 'lamp/LEDNET(7E)',
       toastLog: true,
       preferWithResponse: true,
     );
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    // Zengge：`56 R G B 00 F0 AA` → 优先写 FFE9；部分固件只处理「带响应写」或只认 FFE1 上的 0x56
     final zRgb = buildZenggeStaticColorPacket(r, g, b, order: ZenggeRgbWireOrder.rgb);
     await _writeProtocolBytes(
       zRgb,
@@ -125,7 +181,6 @@ class BleController extends ChangeNotifier {
         overrideChar: _chrFfe1,
       );
     }
-    // 若灯珠走 GRB 线序，再补发一包 GRB（仅灯控，避免音乐同步刷屏）
     final zGrb = buildZenggeStaticColorPacket(r, g, b, order: ZenggeRgbWireOrder.grb);
     if (_hexBytes(zRgb) != _hexBytes(zGrb)) {
       await Future<void>.delayed(const Duration(milliseconds: 40));
@@ -169,7 +224,7 @@ class BleController extends ChangeNotifier {
 
       _assignWriteCharacteristics(services);
       if (_primaryWriteChar == null) {
-        throw Exception('未找到可写特征（需 FFE0/FFE1 或 FFE9 或兼容特征）');
+        throw Exception('未找到可写特征（需 FFFF/FF01 或 FFE0/FFE1 或 FFE9 等）');
       }
 
       await _subscribeZenggeNotifications(services);
@@ -180,11 +235,12 @@ class BleController extends ChangeNotifier {
       notifyListeners();
 
       bleScanLog(
-        '[BleController] 已连接 FFE1=${_chrFfe1?.uuid} FFE9=${_chrFfe9?.uuid}',
+        '[BleController] 已连接 FF01=${_chrFf01?.uuid} FF11=${_chrFf11?.uuid} '
+        'FFE1=${_chrFfe1?.uuid} FFE9=${_chrFfe9?.uuid}',
         toast: true,
       );
       _logWriteTarget('connect后开灯');
-      // 连接后默认开灯（双协议）
+      // 连接后默认开灯（LEDnetWF 仅 7E；旧款可能再发 56）
       await _applyLampPowerToDevice(true);
       onNavigateToTab?.call(1);
     } catch (e) {
@@ -200,15 +256,104 @@ class BleController extends ChangeNotifier {
     bleScanLog('[BleController] 已断开', toast: true);
   }
 
-  /// 征极 LEDnet 调色（GRB 字节序，见 [buildLednetColorPacket]）
+  /// 征极 LEDnet 调色：FF01 用 **SDK 0x31**；其它用 **0x7E GRB**。
   Future<void> updateLightColor(int r, int g, int b) async {
-    final bytes = buildLednetColorPacket(r, g, b);
-    await _writeProtocolBytes(bytes);
+    if (_hasLednetWfChannels) {
+      final p31 = buildZenggeSdkRgbCommand0x31(r, g, b);
+      await _writeFf01ZenggeTransport(
+        p31,
+        tag: 'color ZENGGE 0x31+Transport',
+        preferWithResponse: true,
+      );
+      return;
+    }
+    await _writeProtocolBytes(buildLednetColorPacket(r, g, b));
   }
 
   /// 闪烁预设模式
   Future<void> sendBlinkMode() async {
-    await _writeProtocolBytes(buildLednetBlinkPacket());
+    final inner = buildLednetBlinkPacket();
+    if (_hasLednetWfChannels) {
+      await _writeFf01ZenggeTransport(
+        inner,
+        tag: 'blink LEDNET 7E+Transport',
+        preferWithResponse: true,
+      );
+      return;
+    }
+    await _writeProtocolBytes(inner);
+  }
+
+  int _nextTransportSeq() {
+    final s = _transportSeq;
+    _transportSeq = (_transportSeq + 1) & 0xFF;
+    return s;
+  }
+
+  /// 与 SDK `write(mac, 0x0b, commandData)` 一致：内层 + **Transport v0**（cmdId=11）。
+  /// **FF11 与 FF01 各写一份**（不少荧光棒只接 FE00/FF11）。
+  Future<void> _writeFf01ZenggeTransport(
+    List<int> commandData, {
+    required String tag,
+    bool toastLog = false,
+    bool preferWithResponse = true,
+  }) async {
+    if (!_hasLednetWfChannels) return;
+    final wrapped = encodeLednetWfTransportV0(
+      commandData,
+      seq: _nextTransportSeq(),
+      expectResponse: false,
+    );
+    await _writeFf01AndFf11Same(
+      wrapped,
+      tag: tag,
+      toastLog: toastLog,
+      preferWithResponse: preferWithResponse,
+    );
+  }
+
+  /// 同一帧依次写入 **FF11**（若存在）与 **FF01**（若存在）。
+  Future<void> _writeFf01AndFf11Same(
+    List<int> data, {
+    required String tag,
+    bool toastLog = false,
+    bool preferWithResponse = true,
+  }) async {
+    final ff11 = _chrFf11;
+    final ff01 = _chrFf01;
+    if (ff11 != null) {
+      await _writeProtocolBytes(
+        data,
+        tag: '$tag→FF11',
+        toastLog: toastLog,
+        preferWithResponse: preferWithResponse,
+        overrideChar: ff11,
+      );
+    }
+    if (ff01 != null) {
+      await _writeProtocolBytes(
+        data,
+        tag: '$tag→FF01',
+        toastLog: toastLog,
+        preferWithResponse: preferWithResponse,
+        overrideChar: ff01,
+      );
+    }
+  }
+
+  /// 不套 Transport，直接把 `commandData` 写到 FF11/FF01。
+  Future<void> _writeFf01RawCommandData(
+    List<int> commandData, {
+    required String tag,
+    bool toastLog = false,
+  }) async {
+    if (!_hasLednetWfChannels) return;
+    await _writeFf01AndFf11Same(
+      commandData,
+      tag: tag,
+      toastLog: toastLog,
+      preferWithResponse: true,
+    );
   }
 
   Future<void> writeRgb(List<int> rgb) async {
@@ -226,8 +371,24 @@ class BleController extends ChangeNotifier {
     await updateLightColor(cmd[0], cmd[1], cmd[2]);
   }
 
-  /// 同时收集 FFE1（0x7E）与 FFE9（0x56），避免只连到其一导致「双发」实际全写到同一特征而灯无反应。
+  /// 标准 16 位 UUID：`0000XXXX-0000-1000-8000-00805f9b34fb`
+  static bool _uuidHas16Bit(String uuidLower, String short4Hex) {
+    final h = short4Hex.toLowerCase();
+    return uuidLower.contains('0000$h');
+  }
+
+  /// 兼容部分机型 UUID 字符串格式差异（仍避免误匹配 `ffe1`）。
+  static bool _uuidLikelyShort(String uuidLower, String short4Hex) {
+    final h = short4Hex.toLowerCase();
+    if (_uuidHas16Bit(uuidLower, h)) return true;
+    if (uuidLower.contains('ffe1')) return false;
+    return uuidLower.contains(h);
+  }
+
+  /// FFFF/FF01、FE00/FF11（部分荧光棒）、FFE0/FFE1、FFE9 等。
   void _assignWriteCharacteristics(List<BluetoothService> services) {
+    _chrFf01 = null;
+    _chrFf11 = null;
     _chrFfe1 = null;
     _chrFfe9 = null;
     _chrFallback = null;
@@ -237,26 +398,60 @@ class BleController extends ChangeNotifier {
 
     for (final service in services) {
       final su = service.uuid.toString().toLowerCase();
+      final isFfff = su.contains('ffff');
+      final isFe00 = su.contains('fe00');
       final isFfe0 = su.contains('ffe0');
       for (final c in service.characteristics) {
         if (!canWrite(c)) continue;
         final u = c.uuid.toString().toLowerCase();
-        if (isFfe0 && u.contains('ffe1')) {
+        if (isFfff && _uuidLikelyShort(u, 'ff01')) {
+          _chrFf01 = c;
+        }
+        if (isFe00 && _uuidLikelyShort(u, 'ff11')) {
+          _chrFf11 = c;
+        }
+        if (isFfe0 && _uuidHas16Bit(u, 'ffe1')) {
           _chrFfe1 = c;
         }
-        if (u.contains('ffe9')) {
+        if (_uuidHas16Bit(u, 'ffe9')) {
           _chrFfe9 = c;
         }
         _chrFallback ??= c;
       }
     }
-    // 少数固件 FFE1 不在 FFE0 服务下，再扫一遍仅按 UUID 匹配
+    if (_chrFf01 == null) {
+      for (final service in services) {
+        for (final c in service.characteristics) {
+          if (!canWrite(c)) continue;
+          final u = c.uuid.toString().toLowerCase();
+          if (_uuidLikelyShort(u, 'ff01')) {
+            _chrFf01 = c;
+            break;
+          }
+        }
+        if (_chrFf01 != null) break;
+      }
+    }
+    if (_chrFf11 == null) {
+      for (final service in services) {
+        for (final c in service.characteristics) {
+          if (!canWrite(c)) continue;
+          final u = c.uuid.toString().toLowerCase();
+          if (_uuidLikelyShort(u, 'ff11')) {
+            _chrFf11 = c;
+            break;
+          }
+        }
+        if (_chrFf11 != null) break;
+      }
+    }
+    // 少数固件 FFE1 不在 FFE0 服务下
     if (_chrFfe1 == null) {
       for (final service in services) {
         for (final c in service.characteristics) {
           if (!canWrite(c)) continue;
           final u = c.uuid.toString().toLowerCase();
-          if (u.contains('ffe1')) {
+          if (_uuidHas16Bit(u, 'ffe1')) {
             _chrFfe1 = c;
             break;
           }
@@ -284,35 +479,53 @@ class BleController extends ChangeNotifier {
     return false;
   }
 
-  /// 征极类：先开 FFE0 下 FFE1/FFE2 的 notify，再写颜色（与部分官方 App 顺序一致）。
+  /// LEDnetWF：**FFFF** 下 **FF02** notify；旧款：FFE0 下 FFE1/FFE2。
   Future<void> _subscribeZenggeNotifications(List<BluetoothService> services) async {
     for (final sub in _notifySubscriptions) {
       await sub.cancel();
     }
     _notifySubscriptions.clear();
 
+    Future<void> trySub(BluetoothCharacteristic c) async {
+      try {
+        await c.setNotifyValue(true);
+        _notifySubscriptions.add(c.lastValueStream.listen((_) {}));
+        bleScanLog('[BleLamp] notify 已开 ${c.uuid}', toast: true);
+      } catch (e) {
+        bleScanLog('[BleLamp] notify 失败 ${c.uuid}: $e', toast: false);
+      }
+    }
+
+    for (final service in services) {
+      final su = service.uuid.toString().toLowerCase();
+      if (su.contains('ffff')) {
+        for (final c in service.characteristics) {
+          if (!c.properties.notify && !c.properties.indicate) continue;
+          final u = c.uuid.toString().toLowerCase();
+          if (_uuidHas16Bit(u, 'ff02')) {
+            await trySub(c);
+          }
+        }
+      }
+    }
     for (final service in services) {
       final su = service.uuid.toString().toLowerCase();
       if (!su.contains('ffe0')) continue;
       for (final c in service.characteristics) {
         if (!c.properties.notify && !c.properties.indicate) continue;
         final u = c.uuid.toString().toLowerCase();
-        if (!u.contains('ffe1') && !u.contains('ffe2')) continue;
-        try {
-          await c.setNotifyValue(true);
-          _notifySubscriptions.add(c.lastValueStream.listen((_) {}));
-          bleScanLog('[BleLamp] notify 已开 ${c.uuid}', toast: true);
-        } catch (e) {
-          bleScanLog('[BleLamp] notify 失败 ${c.uuid}: $e', toast: false);
-        }
+        if (!_uuidHas16Bit(u, 'ffe1') && !_uuidHas16Bit(u, 'ffe2')) continue;
+        await trySub(c);
       }
     }
   }
 
-  /// `0x7E` → FFE1；`0x56` → FFE9；否则用主写特征（与旧行为兼容）。
+  /// `0x7E` → FF01 优先，其次 FF11（仅当无 FF01），再 FFE1；`0x56` → FFE9。
   BluetoothCharacteristic? _resolveWriteCharForPacket(List<int> data) {
     if (data.isEmpty) return _primaryWriteChar;
     final head = data[0];
+    if (head == 0x7E && _chrFf01 != null) return _chrFf01;
+    if (head == 0x7E && _chrFf11 != null) return _chrFf11;
     if (head == 0x7E && _chrFfe1 != null) return _chrFfe1;
     if (head == 0x56 && _chrFfe9 != null) return _chrFfe9;
     return _primaryWriteChar;
@@ -354,11 +567,14 @@ class BleController extends ChangeNotifier {
 
   void _clearConnectionState() {
     _connectedDevice = null;
+    _chrFf01 = null;
+    _chrFf11 = null;
     _chrFfe1 = null;
     _chrFfe9 = null;
     _chrFallback = null;
     _isConnecting = false;
     _lampPowerOn = false;
+    _transportSeq = 0;
     for (final sub in _notifySubscriptions) {
       sub.cancel();
     }
@@ -399,6 +615,19 @@ class BleController extends ChangeNotifier {
       );
       bleScanLog('[$tag] 写入 OK', toast: toastLog);
     } catch (e, st) {
+      final altWwr = !useWithoutResponse;
+      try {
+        if (altWwr && characteristic.properties.writeWithoutResponse) {
+          await characteristic.write(data, withoutResponse: true);
+          bleScanLog('[$tag] 写入 OK(已改无响应重试)', toast: toastLog);
+          return;
+        }
+        if (!altWwr && characteristic.properties.write) {
+          await characteristic.write(data, withoutResponse: false);
+          bleScanLog('[$tag] 写入 OK(已改带响应重试)', toast: toastLog);
+          return;
+        }
+      } catch (_) {}
       bleScanLog('[$tag] 写入失败: $e', toast: true);
       bleScanLog('[$tag] $st', toast: false);
     }
