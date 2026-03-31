@@ -43,8 +43,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
             ? connectedDevice!.platformName
             : '荧光棒';
         final deviceId = connectedDevice?.remoteId.str ?? '无设备';
-        final connectionLabel = ble.isConnected ? '已连接' : '未连接';
-        final connectionColor = ble.isConnected ? AppColors.secondary : AppColors.error;
+        final connectionLabel = ble.isConnected ? '已连接' : '离线';
+        final connectionColor =
+            ble.isConnected ? AppColors.secondary : AppColors.onSurfaceVariant;
 
         return Scaffold(
           backgroundColor: AppColors.background,

@@ -160,7 +160,7 @@ class _ScanScreenState extends State<ScanScreen> {
                               d.isLednet,
                               isConnectedToThis,
                               isConnectedToThis
-                                  ? null
+                                  ? () => BleController.instance.disconnect()
                                   : () => _event.connectDevice(index),
                             ),
                           );
@@ -391,7 +391,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     : null,
               ),
               child: Text(
-                isConnectedToThis ? '已连接' : '连接',
+                isConnectedToThis ? '断开' : '连接',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isConnectedToThis
                       ? AppColors.kineticNeon

@@ -26,7 +26,8 @@ class BleController extends ChangeNotifier {
   static const int _lampOnG = 0xD9;
   static const int _lampOnB = 0x62;
 
-  bool _lampPowerOn = true;
+  /// 未连接时为 false；连接成功后默认 true（开灯）
+  bool _lampPowerOn = false;
   bool get lampPowerOn => _lampPowerOn;
 
   /// 连接成功后跳转到指定 Tab 的回调 (0=Scan, 1=Connect, 2=Music, 3=Light)
@@ -42,16 +43,23 @@ class BleController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 征极类设备：部分固件只认 **FFE1 的 0x7E** 包，部分只认 **FFE9 的 0x56** 包，开关需双发。
   Future<void> setLampPowerOn(bool on) async {
-    if (_lampPowerOn == on) return;
     _lampPowerOn = on;
     notifyListeners();
     if (!isConnected) return;
-    if (on) {
-      await updateLightColor(_lampOnR, _lampOnG, _lampOnB);
-    } else {
-      await updateLightColor(0, 0, 0);
-    }
+    await _applyLampPowerToDevice(on);
+  }
+
+  Future<void> _applyLampPowerToDevice(bool on) async {
+    final r = on ? _lampOnR : 0;
+    final g = on ? _lampOnG : 0;
+    final b = on ? _lampOnB : 0;
+    await _writeProtocolBytes(buildLednetColorPacket(r, g, b));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await _writeProtocolBytes(
+      buildZenggeStaticColorPacket(r, g, b, order: ZenggeRgbWireOrder.grb),
+    );
   }
 
   Future<void> connect(BluetoothDevice device) async {
@@ -91,13 +99,12 @@ class BleController extends ChangeNotifier {
       _connectedDevice = device;
       _writeChar = writeChar;
       _isConnecting = false;
+      _lampPowerOn = true;
       notifyListeners();
 
       debugPrint('[BleController] Connected, write char: ${writeChar.uuid}');
-      // 连接成功后发默认绿色（征极需显式发包，避免「已连接但不亮」）
-      if (_lampPowerOn) {
-        await updateLightColor(_lampOnR, _lampOnG, _lampOnB);
-      }
+      // 连接后默认开灯（双协议）
+      await _applyLampPowerToDevice(true);
       onNavigateToTab?.call(1);
     } catch (e) {
       debugPrint('[BleController] Connection error: $e');
@@ -172,6 +179,14 @@ class BleController extends ChangeNotifier {
 
     try {
       if (device != null) {
+        if (_writeChar != null) {
+          try {
+            await _applyLampPowerToDevice(false);
+            await Future<void>.delayed(const Duration(milliseconds: 60));
+          } catch (e) {
+            debugPrint('[BleController] Lamp off before disconnect: $e');
+          }
+        }
         final state = await device.connectionState.first;
         if (state != BluetoothConnectionState.disconnected) {
           await device.disconnect();
@@ -191,7 +206,7 @@ class BleController extends ChangeNotifier {
     _connectedDevice = null;
     _writeChar = null;
     _isConnecting = false;
-    _lampPowerOn = true;
+    _lampPowerOn = false;
     notifyListeners();
   }
 
