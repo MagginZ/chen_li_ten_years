@@ -176,14 +176,10 @@ class MusicController extends ChangeNotifier {
     if (_isPlayableUrl(streamUrl)) {
       try {
         final resolved = preferHttpsForNeteaseHttpUrl(streamUrl!);
-        final h = neteaseHeadersForUrl(resolved);
-        if (h != null) {
-          await _player.setAudioSource(AudioSource.uri(Uri.parse(resolved), headers: h));
-        } else {
-          await _player.setUrl(resolved);
-        }
+        final playUrl = urlForPlaybackThroughProxy(resolved);
+        await _player.setUrl(playUrl);
         if (_isStaleLoad(gen)) return;
-        debugPrint('[MusicController] Playing from URL: $resolved');
+        debugPrint('[MusicController] Playing from URL: $playUrl');
         await _player.play();
         if (_isStaleLoad(gen)) return;
         _isPlaying = true;

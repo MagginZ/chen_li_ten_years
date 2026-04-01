@@ -8,10 +8,14 @@ FastAPI backend for 果实 - Music Playlist API
 """
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from typing import List, Dict, Any
+from urllib.parse import urlparse
 
-from fastapi import FastAPI
+import httpx
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 # pyncm: 网易云音乐 Python API
@@ -30,8 +34,44 @@ _executor = ThreadPoolExecutor(max_workers=2)
 NCM_TIMEOUT_SEC = 12  # pyncm 调用超时
 PAGE_SIZE_DEFAULT = 20
 
+# 代理网易云请求时伪装浏览器（与 App 端防盗链说明一致）
+_NCM_PROXY_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Referer": "https://music.163.com/",
+}
 
-app = FastAPI(title="果实 Music API", version="1.0.0")
+
+def _allowed_proxy_url(url: str, *, kind: str) -> bool:
+    """防止开放代理：仅允许常见网易云 CDN / 占位图域名。"""
+    try:
+        p = urlparse(url.strip())
+        if p.scheme not in ("http", "https") or not p.hostname:
+            return False
+        host = p.hostname.lower()
+        if kind == "audio":
+            return "126.net" in host or "163.com" in host
+        # image: 网易封面 + mock 占位
+        return (
+            "126.net" in host
+            or "163.com" in host
+            or host.endswith("picsum.photos")
+        )
+    except Exception:
+        return False
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    timeout = httpx.Timeout(120.0, connect=30.0)
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        app.state.http_client = client
+        yield
+
+
+app = FastAPI(title="果实 Music API", version="1.0.0", lifespan=_lifespan)
 
 # CORS: allow all origins for Flutter app (web, iOS, Android)
 app.add_middleware(
@@ -189,6 +229,59 @@ async def get_playlist(keyword: str = "陈粒", limit: int = PAGE_SIZE_DEFAULT, 
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "neon-pulse-music-api", "source": "ncm"}
+
+
+@app.get("/api/proxy/audio")
+async def proxy_audio(request: Request, url: str):
+    """
+    代理音频流：服务端带网易云防盗链头拉取 CDN，再流式转给 Flutter（手机不直连网易 CDN）。
+    用法: GET /api/proxy/audio?url=<encodeURIComponent(原始 streamUrl)>
+    """
+    if not url or not url.strip():
+        raise HTTPException(status_code=400, detail="missing url")
+    if not _allowed_proxy_url(url, kind="audio"):
+        raise HTTPException(status_code=400, detail="url not allowed for audio proxy")
+
+    client: httpx.AsyncClient = request.app.state.http_client
+
+    async def stream():
+        async with client.stream("GET", url, headers=_NCM_PROXY_HEADERS) as r:
+            if r.status_code >= 400:
+                raise HTTPException(status_code=502, detail=f"upstream {r.status_code}")
+            async for chunk in r.aiter_bytes():
+                yield chunk
+
+    return StreamingResponse(
+        stream(),
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.get("/api/proxy/image")
+async def proxy_image(request: Request, url: str):
+    """
+    代理封面图：同上，破解防盗链；占位图域名亦在白名单内。
+    封面体积通常较小，整包缓冲可避免流式与 async with 生命周期问题。
+    """
+    if not url or not url.strip():
+        raise HTTPException(status_code=400, detail="missing url")
+    if not _allowed_proxy_url(url, kind="image"):
+        raise HTTPException(status_code=400, detail="url not allowed for image proxy")
+
+    client: httpx.AsyncClient = request.app.state.http_client
+    r = await client.get(url, headers=_NCM_PROXY_HEADERS)
+    if r.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail=f"upstream {r.status_code}",
+        )
+    media_type = r.headers.get("content-type", "image/jpeg")
+    return Response(
+        content=r.content,
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 if __name__ == "__main__":

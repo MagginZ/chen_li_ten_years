@@ -446,9 +446,10 @@ class _TrackCoverImage extends StatelessWidget {
         ),
       );
     }
+    final src = urlForCoverThroughProxy(url!);
     return Image.network(
-      url!,
-      headers: neteaseHeadersForUrl(url),
+      src,
+      headers: src.contains('/api/proxy/image') ? null : neteaseHeadersForUrl(url),
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => Container(
         decoration: BoxDecoration(

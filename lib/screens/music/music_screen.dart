@@ -50,7 +50,8 @@ class _CoverImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (url == null || url!.isEmpty) {
+    final raw = url;
+    if (raw == null || raw.isEmpty) {
       return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -71,9 +72,10 @@ class _CoverImage extends StatelessWidget {
         ),
       );
     }
+    final src = urlForCoverThroughProxy(raw);
     return Image.network(
-      url!,
-      headers: neteaseHeadersForUrl(url),
+      src,
+      headers: src.contains('/api/proxy/image') ? null : neteaseHeadersForUrl(raw),
       fit: BoxFit.cover,
       filterQuality: FilterQuality.low,
       errorBuilder: (_, __, ___) => Container(
