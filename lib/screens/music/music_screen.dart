@@ -602,58 +602,6 @@ class _MusicScreenState extends State<MusicScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GlassContainer(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.bluetooth_searching,
-                                    color: AppColors.secondaryFixed,
-                                    size: 28,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '设备已连接',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: GlassContainer(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.palette,
-                                    color: AppColors.tertiaryFixed,
-                                    size: 28,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '氛围模式',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 120),
                     ],
                   ),
