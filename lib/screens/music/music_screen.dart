@@ -319,6 +319,115 @@ class _MusicScreenState extends State<MusicScreen>
                         ),
                       ),
                       const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            SliderTheme(
+                              data: SliderThemeData(
+                                trackHeight: 6,
+                                activeTrackColor: AppColors.musicPrimary,
+                                inactiveTrackColor: AppColors.surfaceContainerHighest,
+                                thumbShape: const _GlowThumbShape(),
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                                trackShape: const RoundedRectSliderTrackShape(),
+                              ),
+                              child: Slider(
+                                value: _playback.progress.clamp(0.0, 1.0),
+                                onChanged: (v) => _event.setProgress(v),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDuration(_playback.position),
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                                Text(
+                                  _formatDuration(_playback.duration),
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withValues(alpha: 0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              onPressed: _onPrev,
+                              icon: const Icon(Icons.skip_previous),
+                              iconSize: 40,
+                              color: AppColors.onSurface,
+                            ),
+                            const SizedBox(width: 16),
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.musicPrimary,
+                                    AppColors.musicPrimary.withValues(alpha: 0.8),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.musicPrimary.withValues(alpha: 0.24),
+                                    blurRadius: 12,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                onPressed: _event.togglePlay,
+                                icon: Icon(
+                                  _playback.isPlaying ? Icons.pause : Icons.play_arrow,
+                                  size: 40,
+                                  color: AppColors.onPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            IconButton(
+                              onPressed: _onNext,
+                              icon: const Icon(Icons.skip_next),
+                              iconSize: 40,
+                              color: AppColors.onSurface,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       GlassContainer(
                         padding: const EdgeInsets.all(20),
                         child: Column(
@@ -436,7 +545,7 @@ class _MusicScreenState extends State<MusicScreen>
                               Text(
                                 _playback.useMetronomeBeatSync
                                     ? '按 BPM 节拍变色（可调）'
-                                    : '与 BleController.syncScript 一致（固定秒数）',
+                                    : '固定秒数',
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                       fontSize: 11,
@@ -493,115 +602,6 @@ class _MusicScreenState extends State<MusicScreen>
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            SliderTheme(
-                              data: SliderThemeData(
-                                trackHeight: 6,
-                                activeTrackColor: AppColors.musicPrimary,
-                                inactiveTrackColor: AppColors.surfaceContainerHighest,
-                                thumbShape: const _GlowThumbShape(),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                                trackShape: const RoundedRectSliderTrackShape(),
-                              ),
-                              child: Slider(
-                                value: _playback.progress.clamp(0.0, 1.0),
-                                onChanged: (v) => _event.setProgress(v),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _formatDuration(_playback.position),
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    fontFamily: 'monospace',
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                                Text(
-                                  _formatDuration(_playback.duration),
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    fontFamily: 'monospace',
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.black.withValues(alpha: 0.12),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              onPressed: _onPrev,
-                              icon: const Icon(Icons.skip_previous),
-                              iconSize: 40,
-                              color: AppColors.onSurface,
-                            ),
-                            const SizedBox(width: 16),
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.musicPrimary,
-                                    AppColors.musicPrimary.withValues(alpha: 0.8),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.musicPrimary.withValues(alpha: 0.24),
-                                    blurRadius: 12,
-                                  ),
-                                ],
-                              ),
-                              child: IconButton(
-                                onPressed: _event.togglePlay,
-                                icon: Icon(
-                                  _playback.isPlaying ? Icons.pause : Icons.play_arrow,
-                                  size: 40,
-                                  color: AppColors.onPrimary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            IconButton(
-                              onPressed: _onNext,
-                              icon: const Icon(Icons.skip_next),
-                              iconSize: 40,
-                              color: AppColors.onSurface,
-                            ),
-                          ],
-                        ),
-                      ),
                       const SizedBox(height: 120),
                     ],
                   ),
