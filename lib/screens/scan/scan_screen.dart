@@ -92,20 +92,19 @@ class _ScanScreenState extends State<ScanScreen> {
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: CustomScrollView(
-                    slivers: [
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(
-                      child: Text(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      Text(
                         _controller.isScanning ? '扫描中…' : '已发现设备',
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.02,
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
+                      Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -127,8 +126,8 @@ class _ScanScreenState extends State<ScanScreen> {
                             const SizedBox(width: 8),
                             Text(
                               _controller.isScanning
-                                ? '正在搜索附近的设备'
-                                : '共 ${_controller.devices.length} 台设备可用',
+                                  ? '正在搜索附近的设备'
+                                  : '共 ${_controller.devices.length} 台设备可用',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppColors.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
@@ -137,41 +136,40 @@ class _ScanScreenState extends State<ScanScreen> {
                           ],
                         ),
                       ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 48)),
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final d = _controller.devices[index];
-                          final connectedId =
-                              BleController.instance.connectedDevice?.remoteId.str;
-                          final isConnectedToThis = BleController.instance.isConnected &&
-                              connectedId != null &&
-                              connectedId == d.id;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _buildDeviceCard(
-                              context,
-                              d.name,
-                              formatBleMacForDisplay(d.id),
-                              d.signal,
-                              d.signalColor,
-                              d.isPrimary,
-                              isConnectedToThis,
-                              isConnectedToThis
-                                  ? () => BleController.instance.disconnect()
-                                  : () => _event.connectDevice(index),
-                            ),
-                          );
-                        },
-                        childCount: _controller.devices.length,
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: _controller.devices.length,
+                          itemBuilder: (context, index) {
+                            final d = _controller.devices[index];
+                            final connectedId =
+                                BleController.instance.connectedDevice?.remoteId.str;
+                            final isConnectedToThis = BleController.instance.isConnected &&
+                                connectedId != null &&
+                                connectedId == d.id;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildDeviceCard(
+                                context,
+                                d.name,
+                                formatBleMacForDisplay(d.id),
+                                d.signal,
+                                d.signalColor,
+                                d.isPrimary,
+                                isConnectedToThis,
+                                isConnectedToThis
+                                    ? () => BleController.instance.disconnect()
+                                    : () => _event.connectDevice(index),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
+                      Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: AppColors.outlineVariant.withOpacity(0.2),
@@ -199,10 +197,8 @@ class _ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 32),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
                         child: IgnorePointer(
                           ignoring: _controller.isScanning,
                           child: Opacity(
@@ -231,9 +227,8 @@ class _ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                       ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 120)),
-                  ],
+                      // const SizedBox(height: 24),
+                    ],
                   ),
                 ),
               ),

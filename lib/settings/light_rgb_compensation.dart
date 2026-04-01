@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 荧光棒与屏幕色差：按通道 **增益**（0.5～1.5，1.0 为默认）微调下发 RGB。
+/// 应援棒与屏幕色差：按通道 **增益**（0.5～1.5，1.0 为默认）微调下发 RGB。
 /// 在 [BleController.updateLightColor] 中、线序 [R↔B] 补偿之前应用。
 class LightRgbCompensation extends ChangeNotifier {
   LightRgbCompensation._();

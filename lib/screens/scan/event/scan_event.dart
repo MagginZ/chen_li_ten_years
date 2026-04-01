@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../../../ble/ble_permissions.dart';
+import '../../../debug/ble_scan_ui.dart';
 import '../../../theme/app_colors.dart';
 import '../controller/scan_controller.dart';
-import '../../../debug/ble_scan_ui.dart';
+import '../scan_web_mock.dart';
 
 /// 将广播名为空时的设备展示为 `AA:BB:CC:DD:EE:FF` 形式 MAC
 String formatBleMacForDisplay(String remoteIdStr) {
@@ -41,6 +42,17 @@ class ScanEvent {
     final sw = Stopwatch()..start();
     await _scanSubscription?.cancel();
 
+    if (kIsWeb) {
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      fillWebMockScanDevices(_controller);
+      _controller.setScanning(false);
+      bleScanLog(
+        '[ScanEvent] Web 预览：已填充 10 条模拟设备（无真实 BLE，连接会失败）',
+        toast: true,
+      );
+      return;
+    }
+
     if (!await FlutterBluePlus.isSupported) {
       bleScanLog('[ScanEvent] 本机不支持 BLE（${sw.elapsedMilliseconds}ms）', toast: true);
       _controller.setScanning(false);
@@ -60,7 +72,7 @@ class ScanEvent {
     bleScanLog('[ScanEvent] 权限 OK，adapter=${FlutterBluePlus.adapterStateNow}', toast: true);
 
     // 安卓：adapter 仍为 unknown 时尝试唤起系统打开蓝牙（避免部分机型不广播）
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       final snap = FlutterBluePlus.adapterStateNow;
       if (snap == BluetoothAdapterState.unknown) {
         bleScanLog('[ScanEvent] 蓝牙状态 unknown，尝试 turnOn()…', toast: true);

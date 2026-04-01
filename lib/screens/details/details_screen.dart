@@ -41,7 +41,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         final connectedDevice = ble.connectedDevice;
         final deviceName = connectedDevice?.platformName.isNotEmpty == true
             ? connectedDevice!.platformName
-            : '荧光棒';
+            : '应援棒';
         final deviceId = connectedDevice?.remoteId.str ?? '无设备';
         final connectionLabel = ble.isConnected ? '已连接' : '离线';
         final connectionColor =
@@ -279,7 +279,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '荧光棒',
+                                    '应援棒',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w500,
                                     ),

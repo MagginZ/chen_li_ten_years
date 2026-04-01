@@ -9,6 +9,9 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 /// [replaceToast] 为 true（默认）时，先移除当前 SnackBar 再显示新的，避免连续写入时
 /// 多条 SnackBar 排队 4s×N，造成界面堆积与「操作滞后」观感（BLE 本身仍异步，不阻塞 GATT）。
 /// 完整日志仍以 [debugPrint] 为准。
+///
+/// SnackBar 必须在本帧 build 结束后再显示；若在 initState / ListenableBuilder 重建链路里
+/// 同步调用 [showSnackBar] 会触发 “called during build”（Web 预览尤易复现）。
 void bleScanLog(
   String message, {
   bool toast = false,
@@ -16,14 +19,10 @@ void bleScanLog(
 }) {
   debugPrint(message);
   if (!toast) return;
-  final ctx = rootNavigatorKey.currentContext;
-  if (ctx == null) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showBleSnackBar(message, replace: replaceToast);
-    });
-    return;
-  }
-  _showBleSnackBar(message, replace: replaceToast);
+  // 始终延后到帧末，避免与 build / layout 重叠（与 context 是否为空无关）
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _showBleSnackBar(message, replace: replaceToast);
+  });
 }
 
 void _showBleSnackBar(String message, {required bool replace}) {

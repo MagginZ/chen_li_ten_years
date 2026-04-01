@@ -59,7 +59,7 @@ List<int> encodeLednetWfTransportV0(
 }
 
 /// **征极 SDK / lednetwf** 的 RGB 命令：`0x31` + 三色 + WW,CW + mode + persist + **checksum**。
-/// 文档为 R,G,B，但 WS2812/荧光棒常与 [buildLednetColorPacket] 一致走 **GRB**（[wireGrb]=true）。
+/// 文档为 R,G,B，但 WS2812/应援棒常与 [buildLednetColorPacket] 一致走 **GRB**（[wireGrb]=true）。
 List<int> buildZenggeSdkRgbCommand0x31(
   int r,
   int g,

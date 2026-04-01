@@ -9,7 +9,7 @@ import 'zengge_protocol.dart';
 String _hexBytes(List<int> data) =>
     data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ');
 
-/// 荧光棒固件对「逻辑 RGB」与线序组合会等效 **交换 R 与 B**（现象：蓝→橙、粉↔紫）。
+/// 应援棒固件对「逻辑 RGB」与线序组合会等效 **交换 R 与 B**（现象：蓝→橙、粉↔紫）。
 /// 送入 [buildZenggeSdkRgbCommand0x31] / [buildLednetColorPacket] / [buildZenggeStaticColorPacket] 前做一次 R↔B 补偿。
 List<int> _rgbWireCompensateRb(int r, int g, int b) {
   final rr = r.clamp(0, 255);
@@ -32,7 +32,7 @@ class BleController extends ChangeNotifier {
   BluetoothDevice? _connectedDevice;
   /// **LEDnetWF / FFFF/FF01**：与 [ZENGGE Android SDK `write(mac, 0x0b, commandData)`](http://cnwifidevsdk.magichue.net:4000/ble/AndroidSdk.html) 对齐——`0x0B` 即 Transport **cmdId=11**；`commandData` 用 **0x31 RGB+校验**（优先），必要时再发 **0x7E** 内层兼容。
   BluetoothCharacteristic? _chrFf01;
-  /// 部分荧光棒/双通道固件：服务 **FE00**、写 **FF11**（与 FF01 并存时需「双写」才亮）。
+  /// 部分应援棒/双通道固件：服务 **FE00**、写 **FF11**（与 FF01 并存时需「双写」才亮）。
   BluetoothCharacteristic? _chrFf11;
   /// 旧版 LEDnet：`0x7E…` 走 FFE0 下的 FFE1。
   BluetoothCharacteristic? _chrFfe1;
@@ -49,7 +49,7 @@ class BleController extends ChangeNotifier {
 
   bool get _hasLednetWfChannels => _chrFf01 != null || _chrFf11 != null;
 
-  /// 荧光棒电源：开时发默认绿色（Kinetic #94D962），关时熄灭
+  /// 应援棒电源：开时发默认绿色（Kinetic #94D962），关时熄灭
   static const int _lampOnR = 0x94;
   static const int _lampOnG = 0xD9;
   static const int _lampOnB = 0x62;
@@ -312,7 +312,7 @@ class BleController extends ChangeNotifier {
   }
 
   /// 与 SDK `write(mac, 0x0b, commandData)` 一致：内层 + **Transport v0**（cmdId=11）。
-  /// **FF11 与 FF01 各写一份**（不少荧光棒只接 FE00/FF11）。
+  /// **FF11 与 FF01 各写一份**（不少应援棒只接 FE00/FF11）。
   Future<void> _writeFf01ZenggeTransport(
     List<int> commandData, {
     required String tag,
@@ -406,7 +406,7 @@ class BleController extends ChangeNotifier {
     return uuidLower.contains(h);
   }
 
-  /// FFFF/FF01、FE00/FF11（部分荧光棒）、FFE0/FFE1、FFE9 等。
+  /// FFFF/FF01、FE00/FF11（部分应援棒）、FFE0/FFE1、FFE9 等。
   void _assignWriteCharacteristics(List<BluetoothService> services) {
     _chrFf01 = null;
     _chrFf11 = null;

@@ -569,24 +569,6 @@ class _LightScreenState extends State<LightScreen> {
                           scrollDirection: Axis.horizontal,
                           itemCount: LightController.presets.length + 1,
                           itemBuilder: (context, index) {
-                            if (index == LightController.presets.length) {
-                              return Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.outlineVariant,
-                                    style: BorderStyle.solid,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.add,
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              );
-                            }
                             final isSelected = _controller.selectedPreset == index;
                             return Padding(
                               padding: const EdgeInsets.only(right: 16),
