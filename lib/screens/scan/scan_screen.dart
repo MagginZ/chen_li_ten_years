@@ -212,13 +212,13 @@ class _ScanScreenState extends State<ScanScreen> {
                                 children: [
                                   Icon(
                                     Icons.sync,
-                                    color: AppColors.onPrimaryFixed,
+                                    color: AppColors.onPrimary,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     '重新扫描设备',
                                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      color: AppColors.onPrimaryFixed,
+                                      color: AppColors.onPrimary,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.5,
                                     ),
@@ -369,7 +369,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isConnectedToThis
                       ? AppColors.kineticNeon
-                      : (isPrimary ? AppColors.onPrimaryFixed : AppColors.onSurfaceVariant),
+                      : (isPrimary ? AppColors.onPrimary : AppColors.onSurfaceVariant),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
