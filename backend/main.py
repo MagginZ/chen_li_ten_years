@@ -236,6 +236,9 @@ async def proxy_audio(request: Request, url: str):
     """
     代理音频流：服务端带网易云防盗链头拉取 CDN，再流式转给 Flutter（手机不直连网易 CDN）。
     用法: GET /api/proxy/audio?url=<encodeURIComponent(原始 streamUrl)>
+
+    先 HEAD 取 Content-Length / Content-Type 并转发，便于 Android ExoPlayer 解析时长与进度
+    （纯 chunked 无长度时客户端用歌单 durationMs 兜底）。
     """
     if not url or not url.strip():
         raise HTTPException(status_code=400, detail="missing url")
@@ -243,6 +246,20 @@ async def proxy_audio(request: Request, url: str):
         raise HTTPException(status_code=400, detail="url not allowed for audio proxy")
 
     client: httpx.AsyncClient = request.app.state.http_client
+
+    out_headers: Dict[str, str] = {"Cache-Control": "no-store"}
+    media_type = "audio/mpeg"
+    try:
+        hr = await client.head(url, headers=_NCM_PROXY_HEADERS, follow_redirects=True)
+        if hr.status_code < 400:
+            cl = hr.headers.get("content-length")
+            if cl:
+                out_headers["Content-Length"] = cl
+            ct = hr.headers.get("content-type")
+            if ct:
+                media_type = ct.split(";")[0].strip()
+    except Exception as e:
+        print(f"[proxy/audio] HEAD skipped: {e}")
 
     async def stream():
         async with client.stream("GET", url, headers=_NCM_PROXY_HEADERS) as r:
@@ -253,8 +270,8 @@ async def proxy_audio(request: Request, url: str):
 
     return StreamingResponse(
         stream(),
-        media_type="audio/mpeg",
-        headers={"Cache-Control": "no-store"},
+        media_type=media_type,
+        headers=out_headers,
     )
 
 

@@ -14,6 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_blue_plus: ^1.32.0
   just_audio: ^0.10.5
+  audio_session: ^0.1.21
   permission_handler: ^11.3.0
   http: ^1.2.0
   shared_preferences: ^2.3.0

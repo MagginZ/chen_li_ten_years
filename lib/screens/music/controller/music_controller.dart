@@ -172,18 +172,28 @@ class MusicController extends ChangeNotifier {
 
     if (_isStaleLoad(gen)) return;
 
+    // 代理流常为 chunked、无 Content-Length，ExoPlayer 可能长时间拿不到 duration，用歌单时长作展示回退
+    final hintMs = track?.durationMs ?? 0;
+    if (hintMs > 0) {
+      _duration = Duration(milliseconds: hintMs);
+      notifyListeners();
+    }
+
     final streamUrl = track?.streamUrl;
     if (_isPlayableUrl(streamUrl)) {
       try {
         final resolved = preferHttpsForNeteaseHttpUrl(streamUrl!);
         final playUrl = urlForPlaybackThroughProxy(resolved);
-        await _player.setUrl(playUrl);
+        final loadedDur = await _player.setUrl(playUrl);
         if (_isStaleLoad(gen)) return;
-        debugPrint('[MusicController] Playing from URL: $playUrl');
+        debugPrint('[MusicController] Playing from URL: $playUrl loadedDur=$loadedDur');
         await _player.play();
         if (_isStaleLoad(gen)) return;
         _isPlaying = true;
-        _duration = _player.duration ?? _duration;
+        final pd = _player.duration;
+        _duration = loadedDur ??
+            pd ??
+            (hintMs > 0 ? Duration(milliseconds: hintMs) : _duration);
         notifyListeners();
         return;
       } catch (e) {
@@ -198,7 +208,8 @@ class MusicController extends ChangeNotifier {
       await _player.play();
       if (_isStaleLoad(gen)) return;
       _isPlaying = true;
-      _duration = _player.duration ?? _duration;
+      _duration = _player.duration ??
+          (hintMs > 0 ? Duration(milliseconds: hintMs) : _duration);
       notifyListeners();
     } catch (e) {
       debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
