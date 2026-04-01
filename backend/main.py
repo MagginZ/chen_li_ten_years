@@ -106,6 +106,9 @@ def _fetch_from_ncm_sync(keyword: str, limit: int, offset: int) -> List[Playlist
         for item in (audio_resp.get("data") or []):
             uid = item.get("id")
             url = (item.get("url") or "").strip()
+            # Android 9+ 默认禁止明文 HTTP；网易云 CDN 通常同时支持 HTTPS
+            if url.startswith("http://"):
+                url = "https://" + url[7:]
             if uid and url:
                 url_map[uid] = url
 

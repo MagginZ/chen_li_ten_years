@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../netease/netease_network.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
 import 'controller/music_controller.dart';
@@ -447,6 +448,7 @@ class _TrackCoverImage extends StatelessWidget {
     }
     return Image.network(
       url!,
+      headers: neteaseHeadersForUrl(url),
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => Container(
         decoration: BoxDecoration(

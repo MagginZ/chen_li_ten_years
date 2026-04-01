@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../../ble/ble_controller.dart' show BleController, syncScript;
+import '../../../netease/netease_network.dart';
 import 'music_list_controller.dart';
 
 class MusicController extends ChangeNotifier {
@@ -174,9 +175,15 @@ class MusicController extends ChangeNotifier {
     final streamUrl = track?.streamUrl;
     if (_isPlayableUrl(streamUrl)) {
       try {
-        await _player.setUrl(streamUrl!);
+        final resolved = preferHttpsForNeteaseHttpUrl(streamUrl!);
+        final h = neteaseHeadersForUrl(resolved);
+        if (h != null) {
+          await _player.setAudioSource(AudioSource.uri(Uri.parse(resolved), headers: h));
+        } else {
+          await _player.setUrl(resolved);
+        }
         if (_isStaleLoad(gen)) return;
-        debugPrint('[MusicController] Playing from URL: $streamUrl');
+        debugPrint('[MusicController] Playing from URL: $resolved');
         await _player.play();
         if (_isStaleLoad(gen)) return;
         _isPlaying = true;

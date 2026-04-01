@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../netease/netease_network.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_container.dart';
 import '../../ble/ble_controller.dart';
@@ -72,6 +73,7 @@ class _CoverImage extends StatelessWidget {
     }
     return Image.network(
       url!,
+      headers: neteaseHeadersForUrl(url),
       fit: BoxFit.cover,
       filterQuality: FilterQuality.low,
       errorBuilder: (_, __, ___) => Container(

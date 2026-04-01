@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../api/playlist_api.dart';
 import '../../../ble/ble_controller.dart';
+import '../../../netease/netease_network.dart';
 
 /// 歌单中的单曲
 class MusicTrack {
@@ -23,12 +24,14 @@ class MusicTrack {
   });
 
   factory MusicTrack.fromDto(PlaylistItemDto dto) {
+    final cover = dto.coverUrl.isNotEmpty ? dto.coverUrl : null;
+    final stream = dto.streamUrl.isNotEmpty ? dto.streamUrl : null;
     return MusicTrack(
       id: dto.id,
       title: dto.title,
       artist: dto.artist,
-      coverUrl: dto.coverUrl.isNotEmpty ? dto.coverUrl : null,
-      streamUrl: dto.streamUrl.isNotEmpty ? dto.streamUrl : null,
+      coverUrl: cover != null ? preferHttpsForNeteaseHttpUrl(cover) : null,
+      streamUrl: stream != null ? preferHttpsForNeteaseHttpUrl(stream) : null,
       durationMs: dto.durationMs,
     );
   }
