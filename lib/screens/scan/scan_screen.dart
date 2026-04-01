@@ -137,35 +137,37 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: _controller.devices.length,
-                          itemBuilder: (context, index) {
-                            final d = _controller.devices[index];
-                            final connectedId =
-                                BleController.instance.connectedDevice?.remoteId.str;
-                            final isConnectedToThis = BleController.instance.isConnected &&
-                                connectedId != null &&
-                                connectedId == d.id;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildDeviceCard(
-                                context,
-                                d.name,
-                                formatBleMacForDisplay(d.id),
-                                d.signal,
-                                d.signalColor,
-                                d.isPrimary,
-                                isConnectedToThis,
-                                isConnectedToThis
-                                    ? () => BleController.instance.disconnect()
-                                    : () => _event.connectDevice(index),
-                              ),
-                            );
-                          },
+                      if (_controller.devices.isNotEmpty)...[
+                        Expanded(
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: _controller.devices.length,
+                            itemBuilder: (context, index) {
+                              final d = _controller.devices[index];
+                              final connectedId =
+                                  BleController.instance.connectedDevice?.remoteId.str;
+                              final isConnectedToThis = BleController.instance.isConnected &&
+                                  connectedId != null &&
+                                  connectedId == d.id;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildDeviceCard(
+                                  context,
+                                  d.name,
+                                  formatBleMacForDisplay(d.id),
+                                  d.signal,
+                                  d.signalColor,
+                                  d.isPrimary,
+                                  isConnectedToThis,
+                                  isConnectedToThis
+                                      ? () => BleController.instance.disconnect()
+                                      : () => _event.connectDevice(index),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                      ],
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: Container(
@@ -227,7 +229,6 @@ class _ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                       ),
-                      // const SizedBox(height: 24),
                     ],
                   ),
                 ),
