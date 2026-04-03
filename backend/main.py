@@ -74,10 +74,12 @@ async def _lifespan(app: FastAPI):
 app = FastAPI(title="果实 Music API", version="1.0.0", lifespan=_lifespan)
 
 # CORS: allow all origins for Flutter app (web, iOS, Android)
+# allow_credentials 与 allow_origins=["*"] 组合违反 CORS 规范，Chrome 对 crossOrigin=anonymous
+# 的 <audio> 拉流会拿不到合法 ACAO，导致 audioplayers_web 静音/失败。
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../../ble/ble_controller.dart' show BleController, syncScript;
@@ -47,6 +48,9 @@ class MusicController extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _duration = const Duration(seconds: 60);
 
+  /// 暂停时记录的进度；恢复时先 seek 再 resume，避免部分平台 resume 从头播。
+  Duration _resumeFrom = Duration.zero;
+
   /// 上一帧播放位置（毫秒），用于判断「跨过」某一节拍时刻。
   int _prevPosMs = -1;
 
@@ -91,6 +95,17 @@ class MusicController extends ChangeNotifier {
   void setUseMetronomeBeatSync(bool value) {
     _useMetronomeBeatSync = value;
     notifyListeners();
+  }
+
+  void _syncPlayingFromPlayer() {
+    _isPlaying = _player.state == PlayerState.playing;
+  }
+
+  Duration _clampToDuration(Duration d) {
+    final maxMs = _duration.inMilliseconds;
+    if (maxMs <= 0) return d < Duration.zero ? Duration.zero : d;
+    final ms = d.inMilliseconds.clamp(0, maxMs);
+    return Duration(milliseconds: ms);
   }
 
   bool _isPlayableUrl(String? url) {
@@ -163,6 +178,21 @@ class MusicController extends ChangeNotifier {
     }
     _currentTrack = track;
     await _loadTrack(track);
+    // Web：自动 play() 须在用户手势链内；load 完成后立刻 resume，仍算同一次点击的延续。
+    if (kIsWeb) {
+      await _resumeForWebAfterLoad();
+    }
+  }
+
+  /// Chrome 等对自动播放严格；切歌后紧跟 resume，尽量落在用户点击的异步延续里。
+  Future<void> _resumeForWebAfterLoad() async {
+    try {
+      await _player.resume();
+      _syncPlayingFromPlayer();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[MusicController] Web resume after load: $e');
+    }
   }
 
   bool _isStaleLoad(int gen) => gen != _loadGeneration;
@@ -180,6 +210,7 @@ class MusicController extends ChangeNotifier {
     _isPlaying = false;
     _progress = 0.0;
     _position = Duration.zero;
+    _resumeFrom = Duration.zero;
     _duration = hintMs > 0
         ? Duration(milliseconds: hintMs)
         : const Duration(seconds: 60);
@@ -199,10 +230,12 @@ class MusicController extends ChangeNotifier {
         await _player.setSource(UrlSource(playUrl));
         if (_isStaleLoad(gen)) return;
         debugPrint('[MusicController] Playing from URL: $playUrl');
-        await _player.resume();
-        if (_isStaleLoad(gen)) return;
-        _isPlaying = true;
-        notifyListeners();
+        if (!kIsWeb) {
+          await _player.resume();
+          if (_isStaleLoad(gen)) return;
+          _syncPlayingFromPlayer();
+          notifyListeners();
+        }
         return;
       } catch (e) {
         debugPrint('[MusicController] URL source failed, fallback: $e');
@@ -214,10 +247,12 @@ class MusicController extends ChangeNotifier {
       await _player.setSource(AssetSource('audio/mock_music.mp3'));
       if (_isStaleLoad(gen)) return;
       debugPrint('[MusicController] Using fallback asset');
-      await _player.resume();
-      if (_isStaleLoad(gen)) return;
-      _isPlaying = true;
-      notifyListeners();
+      if (!kIsWeb) {
+        await _player.resume();
+        if (_isStaleLoad(gen)) return;
+        _syncPlayingFromPlayer();
+        notifyListeners();
+      }
       return;
     } catch (e) {
       debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
@@ -227,10 +262,12 @@ class MusicController extends ChangeNotifier {
     try {
       await _player.setSource(UrlSource(_kSoundHelixUrl));
       if (_isStaleLoad(gen)) return;
-      await _player.resume();
-      if (_isStaleLoad(gen)) return;
-      _isPlaying = true;
-      notifyListeners();
+      if (!kIsWeb) {
+        await _player.resume();
+        if (_isStaleLoad(gen)) return;
+        _syncPlayingFromPlayer();
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('[MusicController] SoundHelix failed: $e');
     }
@@ -239,11 +276,21 @@ class MusicController extends ChangeNotifier {
   Future<void> togglePlay() async {
     try {
       if (_isPlaying) {
+        _resumeFrom = _clampToDuration(_position);
         await _player.pause();
       } else {
-        await _player.resume();
+        // Web：WrappedPlayer.resume() 用内部 _pausedAt；先 seek 再 resume 易导致从头播或异常。
+        if (kIsWeb) {
+          await _player.resume();
+        } else {
+          final target = _clampToDuration(_resumeFrom);
+          await _player.seek(target);
+          await _player.resume();
+        }
       }
-      _isPlaying = !_isPlaying;
+      // 勿在 pause/resume 后再手动 !_isPlaying：onPlayerStateChanged 会先设为 paused，
+      // 若紧接着翻转会变成「仍显示播放中」，下次点击只会再次 pause，无法 resume。
+      _syncPlayingFromPlayer();
       notifyListeners();
     } catch (e) {
       debugPrint('[MusicController] togglePlay failed: $e');
@@ -258,17 +305,20 @@ class MusicController extends ChangeNotifier {
   void setProgress(double value) {
     _progress = value.clamp(0.0, 1.0);
     final ms = (_duration.inMilliseconds * _progress).round();
-    unawaited(_player.seek(Duration(milliseconds: ms)));
+    _resumeFrom = Duration(milliseconds: ms);
+    unawaited(_player.seek(_resumeFrom));
     _prevPosMs = ms > 0 ? ms - 1 : -1;
     notifyListeners();
   }
 
   void seekToStart() {
+    _resumeFrom = Duration.zero;
     unawaited(_player.seek(Duration.zero));
     _prevPosMs = -1;
   }
 
   void seekToEnd() {
+    _resumeFrom = _duration;
     unawaited(_player.seek(_duration));
   }
 
