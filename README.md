@@ -129,7 +129,7 @@ chen_li_ten_years/
 - flutter: SDK
 - cupertino_icons: ^1.0.6
 - flutter_blue_plus: ^1.32.0 — 蓝牙扫描与连接
-- just_audio: ^0.10.5 — 音乐播放（替代 audioplayers 解决 iOS 崩溃）
+- audioplayers: ^6.6.0 — 音乐播放（just_audio 播放会失败）
 - permission_handler: ^11.3.0 — 权限请求
 
 ## 逻辑实现
@@ -231,5 +231,6 @@ chen_li_ten_years/
 - **2026年3月30号**: 终于想起来买电池，应援棒改造成功，app调试中，目前用征极app是可以操作的
 - **2026年3月31号**: 调试调试ing，感觉快成了，但还有好多细节。颜色纠偏、节拍
 - **2026年4月1号**: 节拍写完了，发现个大问题，网易云api在安卓上被拦了，没法播放。。还没想到解决办法
+- **2026年4月3号**: 浪费token改半天，最终换成了 audioplayers 替代 just_audio 解决
 
 
