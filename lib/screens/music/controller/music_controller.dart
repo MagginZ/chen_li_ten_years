@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 
 import '../../../ble/ble_controller.dart' show BleController, syncScript;
 import '../../../netease/netease_network.dart';
@@ -9,15 +9,24 @@ import 'music_list_controller.dart';
 
 class MusicController extends ChangeNotifier {
   MusicController({this.initialTrack}) {
-    _durationSub = _player.durationStream.listen((d) {
-      if (d != null) {
-        _duration = d;
-        notifyListeners();
-      }
+    unawaited(_player.setReleaseMode(ReleaseMode.stop));
+
+    _durationSub = _player.onDurationChanged.listen((d) {
+      if (d.inMilliseconds <= 0) return;
+      _duration = d;
+      notifyListeners();
     });
-    _positionSub = _player.positionStream.listen(_onPositionChanged);
-    _stateSub = _player.playerStateStream.listen((s) {
-      _isPlaying = s.playing;
+    _positionSub = _player.onPositionChanged.listen(_onPositionChanged);
+    _stateSub = _player.onPlayerStateChanged.listen((s) {
+      final playing = s == PlayerState.playing;
+      if (_isPlaying == playing) return;
+      _isPlaying = playing;
+      notifyListeners();
+    });
+    _completeSub = _player.onPlayerComplete.listen((_) {
+      _isPlaying = false;
+      _position = _duration;
+      _progress = 1.0;
       notifyListeners();
     });
   }
@@ -25,11 +34,12 @@ class MusicController extends ChangeNotifier {
   final MusicTrack? initialTrack;
   MusicTrack? _currentTrack;
   final AudioPlayer _player = AudioPlayer();
-  StreamSubscription? _durationSub;
-  StreamSubscription? _positionSub;
-  StreamSubscription? _stateSub;
+  StreamSubscription<Duration>? _durationSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<PlayerState>? _stateSub;
+  StreamSubscription<void>? _completeSub;
 
-  /// 防止连续切歌时，先发出的 `setUrl` 后完成、覆盖后选曲目。
+  /// 防止连续切歌时，先发出的加载完成后覆盖后选曲目。
   int _loadGeneration = 0;
 
   bool _isPlaying = false;
@@ -162,9 +172,18 @@ class MusicController extends ChangeNotifier {
 
   Future<void> _loadTrack(MusicTrack? track) async {
     final gen = ++_loadGeneration;
+    final hintMs = track?.durationMs ?? 0;
+
     _beatHueSeed = 0;
     _prevPosMs = -1;
     _triggeredScriptSeconds.clear();
+    _isPlaying = false;
+    _progress = 0.0;
+    _position = Duration.zero;
+    _duration = hintMs > 0
+        ? Duration(milliseconds: hintMs)
+        : const Duration(seconds: 60);
+    notifyListeners();
 
     try {
       await _player.stop();
@@ -172,70 +191,63 @@ class MusicController extends ChangeNotifier {
 
     if (_isStaleLoad(gen)) return;
 
-    // 代理流常为 chunked、无 Content-Length，ExoPlayer 可能长时间拿不到 duration，用歌单时长作展示回退
-    final hintMs = track?.durationMs ?? 0;
-    if (hintMs > 0) {
-      _duration = Duration(milliseconds: hintMs);
-      notifyListeners();
-    }
-
     final streamUrl = track?.streamUrl;
     if (_isPlayableUrl(streamUrl)) {
       try {
         final resolved = preferHttpsForNeteaseHttpUrl(streamUrl!);
         final playUrl = urlForPlaybackThroughProxy(resolved);
-        final loadedDur = await _player.setUrl(playUrl);
+        await _player.setSource(UrlSource(playUrl));
         if (_isStaleLoad(gen)) return;
-        debugPrint('[MusicController] Playing from URL: $playUrl loadedDur=$loadedDur');
-        await _player.play();
+        debugPrint('[MusicController] Playing from URL: $playUrl');
+        await _player.resume();
         if (_isStaleLoad(gen)) return;
         _isPlaying = true;
-        final pd = _player.duration;
-        _duration = loadedDur ??
-            pd ??
-            (hintMs > 0 ? Duration(milliseconds: hintMs) : _duration);
         notifyListeners();
         return;
       } catch (e) {
-        debugPrint('[MusicController] setUrl failed, fallback: $e');
+        debugPrint('[MusicController] URL source failed, fallback: $e');
         if (_isStaleLoad(gen)) return;
       }
     }
+
     try {
-      await _player.setAsset('assets/audio/mock_music.mp3');
+      await _player.setSource(AssetSource('audio/mock_music.mp3'));
       if (_isStaleLoad(gen)) return;
       debugPrint('[MusicController] Using fallback asset');
-      await _player.play();
+      await _player.resume();
       if (_isStaleLoad(gen)) return;
       _isPlaying = true;
-      _duration = _player.duration ??
-          (hintMs > 0 ? Duration(milliseconds: hintMs) : _duration);
       notifyListeners();
+      return;
     } catch (e) {
       debugPrint('[MusicController] Asset failed, using SoundHelix: $e');
       if (_isStaleLoad(gen)) return;
-      try {
-        await _player.setUrl(_kSoundHelixUrl);
-        if (_isStaleLoad(gen)) return;
-        await _player.play();
-        if (_isStaleLoad(gen)) return;
-        _isPlaying = true;
-        _duration = _player.duration ?? _duration;
-        notifyListeners();
-      } catch (e2) {
-        debugPrint('[MusicController] setUrl failed: $e2');
-      }
+    }
+
+    try {
+      await _player.setSource(UrlSource(_kSoundHelixUrl));
+      if (_isStaleLoad(gen)) return;
+      await _player.resume();
+      if (_isStaleLoad(gen)) return;
+      _isPlaying = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[MusicController] SoundHelix failed: $e');
     }
   }
 
   Future<void> togglePlay() async {
-    if (_isPlaying) {
-      await _player.pause();
-    } else {
-      await _player.play();
+    try {
+      if (_isPlaying) {
+        await _player.pause();
+      } else {
+        await _player.resume();
+      }
+      _isPlaying = !_isPlaying;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[MusicController] togglePlay failed: $e');
     }
-    _isPlaying = !_isPlaying;
-    notifyListeners();
   }
 
   void toggleSync() {
@@ -246,24 +258,27 @@ class MusicController extends ChangeNotifier {
   void setProgress(double value) {
     _progress = value.clamp(0.0, 1.0);
     final ms = (_duration.inMilliseconds * _progress).round();
-    _player.seek(Duration(milliseconds: ms));
+    unawaited(_player.seek(Duration(milliseconds: ms)));
     _prevPosMs = ms > 0 ? ms - 1 : -1;
     notifyListeners();
   }
 
   void seekToStart() {
-    _player.seek(Duration.zero);
+    unawaited(_player.seek(Duration.zero));
     _prevPosMs = -1;
   }
 
-  void seekToEnd() => _player.seek(_duration);
+  void seekToEnd() {
+    unawaited(_player.seek(_duration));
+  }
 
   @override
   void dispose() {
     _durationSub?.cancel();
     _positionSub?.cancel();
     _stateSub?.cancel();
-    _player.dispose();
+    _completeSub?.cancel();
+    unawaited(_player.dispose());
     super.dispose();
   }
 }
